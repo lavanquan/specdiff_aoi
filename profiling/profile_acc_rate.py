@@ -6,14 +6,33 @@ import torch
 import openai
 import transformers
 from tqdm import tqdm
-# from IPython.display import display
 from openai import OpenAI
 from datasets import load_dataset, load_from_disk
 from transformers import AutoModelForCausalLM, AutoTokenizer
 # transformers.logging.set_verbosity_info()
 transformers.logging.set_verbosity_error()
 
+class Colors:
+    YELLOW = '\033[93m'
+    CYAN = '\033[96m'
+    MAGENTA = '\033[95m'
+    RED = '\033[91m'
+    GREEN = '\033[92m'
+    BOLD = '\033[1m'
+    RESET = '\033[0m'
 
+def is_notebook():
+    """Detect if running inside Jupyter or IPython kernel."""
+    try:
+        from IPython import get_ipython
+        shell = get_ipython().__class__.__name__
+        return shell in ('ZMQInteractiveShell',)  # Jupyter/IPython
+    except Exception:
+        return False
+
+def is_interactive():
+    return is_notebook() or sys.stdout.isatty()
+    
 system_prompt = """
 Solve the following math problem efficiently and clearly. Please reason step by step, 
 separate logical reasoning steps with two newline characters (\n\n), and put your final answer within \\boxed{{}}.
@@ -187,8 +206,9 @@ for problem_id in tqdm(range(50), desc="Problems", position=0):
     rejected_tokens = 0
     current_token_ids = []  # prefix tokens generated so far
 
-    inner_bar = tqdm(total=num_target_tokens, desc=f"Verification (Problem {problem_id})",
-                     position=1, leave=True, dynamic_ncols=False, file=sys.stdout)
+    if is_interactive():
+        inner_bar = tqdm(total=num_target_tokens, miniters=25, desc=f"Verification (Problem {problem_id})",
+                        position=1, leave=True, dynamic_ncols=False, file=sys.stdout)
 
     while len(current_token_ids) < len(target_ids):
         # Get next n speculative tokens from draft model
@@ -200,7 +220,8 @@ for problem_id in tqdm(range(50), desc="Problems", position=0):
 
         # Compare draft proposal with target tokens one by one
         for draft_tok, target_tok in zip(draft_proposal, target_slice):
-            inner_bar.update(1)
+            if is_interactive():
+                inner_bar.update(1)
             if draft_tok == target_tok:
                 accepted_tokens += 1
                 current_token_ids.append(draft_tok)
@@ -219,12 +240,13 @@ for problem_id in tqdm(range(50), desc="Problems", position=0):
         # If we’ve already matched the full target sequence, stop
         if len(current_token_ids) >= len(target_ids):
             break
-    
-    inner_bar.close()
+
+    if is_interactive():
+        inner_bar.close()
 
     # Compute token acceptance rate
     acceptance_rate = accepted_tokens / (accepted_tokens + rejected_tokens)
-    print(f"Problem {problem_id} acceptance rate: {acceptance_rate:.3f}")
+    print(f"{Colors.YELLOW}Problem {problem_id} acceptance rate: {acceptance_rate:.3f}{Colors.RESET}")
     print(f"Accepted: {accepted_tokens}, Rejected: {rejected_tokens}, Total: {accepted_tokens + rejected_tokens}")
     total_accepted_tokens += accepted_tokens
     total_rejected_tokens += rejected_tokens
