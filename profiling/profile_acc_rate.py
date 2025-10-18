@@ -1,10 +1,12 @@
 # %%
 import os
+import sys
 import time
 import torch
 import openai
 import transformers
 from tqdm import tqdm
+# from IPython.display import display
 from openai import OpenAI
 from datasets import load_dataset, load_from_disk
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -18,7 +20,7 @@ separate logical reasoning steps with two newline characters (\n\n), and put you
 Problem: {problem}
 """
 
-dataset_name = "aime"
+dataset_name = "math"
 
 if dataset_name == "aime":
     dataset = load_dataset("HuggingFaceH4/aime_2024")["train"]
@@ -34,8 +36,8 @@ else:
     
 # %%
 draft_model_name = "Qwen/Qwen2.5-1.5B-Instruct"
-# target_model_name = "Qwen/Qwen2.5-32B-Instruct"
-target_model_name = "Qwen/Qwen2.5-7B-Instruct"
+target_model_name = "Qwen/Qwen2.5-32B-Instruct"
+# target_model_name = "Qwen/Qwen2.5-7B-Instruct"
 dllm_name = "Efficient-Large-Model/Fast_dLLM_v2_1.5B"
 
 draft_model = AutoModelForCausalLM.from_pretrained(
@@ -71,10 +73,11 @@ def get_target_token_ids(model, tokenizer, messages):
     )
     model_inputs = tokenizer([text], return_tensors="pt").to(model.device)
     num_input_tokens = model_inputs.input_ids.shape[1]
+    print(f"num_input_tokens {num_input_tokens}, first eight tokens: {model_inputs.input_ids[0, :8].tolist()}")
     
     generated_ids = model.generate(
         **model_inputs,
-        max_new_tokens=512,
+        max_new_tokens=512,  # was 512 in vanilla sd experiments
         # use greedy decoding, not sampling
         do_sample=False,
         # temperature=1.0,
@@ -88,7 +91,7 @@ def get_target_token_ids(model, tokenizer, messages):
     return generated_ids[0].tolist(), model_inputs
 
 
-def get_next_n_tokens(model, tokenizer, orig_model_inputs, token_ids_so_far, n):
+def get_next_n_tokens(model, orig_model_inputs, token_ids_so_far, n):
     """Get the next n tokens from the model given the token IDs so far.
     """
     new_tokens = torch.tensor(token_ids_so_far, device=orig_model_inputs['input_ids'].device, dtype=torch.long).unsqueeze(0)
@@ -115,12 +118,47 @@ def get_next_n_tokens(model, tokenizer, orig_model_inputs, token_ids_so_far, n):
 
 
 
+def get_next_n_tokens_dllm(dllm, orig_model_inputs, token_ids_so_far, n, output_seqlen=512, small_block_size=8, threshold=0.9):
+    """Get the next n tokens from the model given the token IDs so far.
+    """
+    num_tokens_in_prompt = orig_model_inputs.input_ids.shape[1]
+    new_tokens = torch.tensor(token_ids_so_far, device=orig_model_inputs['input_ids'].device, dtype=torch.long).unsqueeze(0)
+    new_mask = torch.ones_like(new_tokens, dtype=torch.long)  # attention mask = 1 for new tokens
+
+    # Append along the sequence dimension (dim=1)
+    new_model_inputs = {
+        'input_ids': torch.cat([orig_model_inputs['input_ids'], new_tokens], dim=1),
+        'attention_mask': torch.cat([orig_model_inputs['attention_mask'], new_mask], dim=1)
+    }
+
+    generated_ids = dllm.generate(
+        # **new_model_inputs,
+        new_model_inputs["input_ids"],
+        # max_new_tokens=output_seqlen,
+        max_new_tokens=128,  # NOTE(ruipan): setting this to 8 will not lead to new tokens hmm
+        small_block_size=small_block_size,
+        threshold=threshold,
+        # use greedy decoding, not sampling
+        do_sample=False,
+        # temperature=1.0,
+        # top_p=1.0,
+        # top_k=0.0,
+    )
+    
+    full_output_seqlen = generated_ids.shape[1]
+    assert full_output_seqlen > num_tokens_in_prompt + len(token_ids_so_far), f"full_output_seqlen {full_output_seqlen}, num_tokens_in_prompt {num_tokens_in_prompt}, len(token_ids_so_far) {len(token_ids_so_far)}"
+    generated_ids = generated_ids[0][len(new_model_inputs["input_ids"][0]):]
+    generated_ids = generated_ids.tolist()[:n]  # only take the next n tokens
+    
+    return generated_ids
+
 
 # %%
 total_accepted_tokens = 0
 total_rejected_tokens = 0
 
-for problem_id in tqdm(range(30)):
+for problem_id in tqdm(range(50), desc="Problems", position=0):
+# for problem_id in range(1):
     if dataset_name == "aime":
         problem = dataset["problem"][problem_id]
         options = None
@@ -141,24 +179,28 @@ for problem_id in tqdm(range(30)):
     ]
     
     target_ids, orig_model_inputs = get_target_token_ids(target_model, target_tokenizer, messages)
-    
-    print(f"len(target_ids) = {len(target_ids)}")
+    num_target_tokens = len(target_ids)
+    print(f"Target model generated {num_target_tokens} tokens")
 
     n = 5  # number of speculative tokens proposed each time
     accepted_tokens = 0
     rejected_tokens = 0
     current_token_ids = []  # prefix tokens generated so far
 
-    # Start speculative decoding loop
+    inner_bar = tqdm(total=num_target_tokens, desc=f"Verification (Problem {problem_id})",
+                     position=1, leave=True, dynamic_ncols=False, file=sys.stdout)
+
     while len(current_token_ids) < len(target_ids):
         # Get next n speculative tokens from draft model
-        draft_proposal = get_next_n_tokens(draft_model, draft_tokenizer, orig_model_inputs, current_token_ids, n=n)
-
+        # draft_proposal = get_next_n_tokens(draft_model, orig_model_inputs, current_token_ids, n=n)
+        draft_proposal = get_next_n_tokens_dllm(dllm, orig_model_inputs, current_token_ids, n=n)
+        
         # The corresponding slice of ground-truth target tokens
         target_slice = target_ids[len(current_token_ids): len(current_token_ids) + n]
 
         # Compare draft proposal with target tokens one by one
         for draft_tok, target_tok in zip(draft_proposal, target_slice):
+            inner_bar.update(1)
             if draft_tok == target_tok:
                 accepted_tokens += 1
                 current_token_ids.append(draft_tok)
@@ -172,14 +214,17 @@ for problem_id in tqdm(range(30)):
                 break  # speculative generation diverged; go back to draft proposal step
             
                 # FIXME(ruipan): math, question 1, len(target_ids) = 235, strange mismatch at len 148
+            # print(f"Progress: len(current_token_ids) = {len(current_token_ids)}")
 
         # If we’ve already matched the full target sequence, stop
         if len(current_token_ids) >= len(target_ids):
             break
+    
+    inner_bar.close()
 
     # Compute token acceptance rate
     acceptance_rate = accepted_tokens / (accepted_tokens + rejected_tokens)
-    print(f"Acceptance rate: {acceptance_rate:.3f}")
+    print(f"Problem {problem_id} acceptance rate: {acceptance_rate:.3f}")
     print(f"Accepted: {accepted_tokens}, Rejected: {rejected_tokens}, Total: {accepted_tokens + rejected_tokens}")
     total_accepted_tokens += accepted_tokens
     total_rejected_tokens += rejected_tokens
