@@ -218,8 +218,8 @@ parser.add_argument("--veri_freq", type=int, default=5,
 parser.add_argument("--drafter_threshold", type=float, default=0.9,
                     help="Threshold for confidence-adaptive decoding of the dLLM drafter model")
 args, _ = parser.parse_known_args()
-args.output_dir_figures = os.path.join(args.output_dir, "figures", "acc_rate_within_query", args.dataset_name, args.drafter_threshold)
-args.output_dir_pickles = os.path.join(args.output_dir, "pickles", "playground", "detailed_info", args.dataset_name, args.drafter_threshold)
+args.output_dir_figures = os.path.join(args.output_dir, "figures", "acc_rate_within_query", args.dataset_name, str(args.drafter_threshold))
+args.output_dir_pickles = os.path.join(args.output_dir, "pickles", "playground", "detailed_info", args.dataset_name, str(args.drafter_threshold))
 for d in [args.output_dir_figures, args.output_dir_pickles]:
     os.makedirs(d, exist_ok=True)
 dataset = get_dataset(args.dataset_name)
@@ -296,7 +296,7 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
         total_num_forward_passes += num_forward_passes
         
         # The corresponding slice of ground-truth target tokens
-        target_slice = target_ids[len(current_token_ids): len(current_token_ids) + n]
+        target_slice = target_ids[len(current_token_ids): len(current_token_ids) + args.veri_freq]
 
         info_this_round = {
             "current_token_ids": current_token_ids.copy(),
@@ -342,17 +342,17 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
     print(f"Accepted: {accepted_tokens}, Rejected: {rejected_tokens}, Total: {accepted_tokens + rejected_tokens}")
 
     # export
-    # visualize_boolean_series(acceptance_decisions, output_dir=args.output_dir_figures, problem_id=problem_id)
-    visualize_boolean_series(acceptance_decisions, output_dir=None, problem_id=None)
+    visualize_boolean_series(acceptance_decisions, output_dir=args.output_dir_figures, problem_id=problem_id)
+    # visualize_boolean_series(acceptance_decisions, output_dir=None, problem_id=None)
     
     pickled_data["num_speculation_rounds"] = num_speculation_rounds
     pickled_data["total_num_forward_passes"] = total_num_forward_passes
     pickled_data["accepted_tokens"] = accepted_tokens
     pickled_data["rejected_tokens"] = rejected_tokens
     
-    # with open(os.path.join(args.output_dir_pickles, f"{problem_id}.pickle"), "wb") as f:
-    #     pickle.dump(pickled_data, f)
-    # with open(os.path.join(args.output_dir_pickles, f"{problem_id}.txt"), "w") as f:
-    #     pprint.pprint(pickled_data, stream=f)
+    with open(os.path.join(args.output_dir_pickles, f"{problem_id}.pickle"), "wb") as f:
+        pickle.dump(pickled_data, f)
+    with open(os.path.join(args.output_dir_pickles, f"{problem_id}.txt"), "w") as f:
+        pprint.pprint(pickled_data, stream=f)
 
 # %%
