@@ -47,33 +47,6 @@ Problem: {problem}
 """
 
 
-# %%
-draft_model_name = "Qwen/Qwen2.5-1.5B-Instruct"
-target_model_name = "Qwen/Qwen2.5-32B-Instruct"
-# target_model_name = "Qwen/Qwen2.5-7B-Instruct"
-dllm_name = "Efficient-Large-Model/Fast_dLLM_v2_1.5B"
-
-draft_model = AutoModelForCausalLM.from_pretrained(
-    draft_model_name,
-    torch_dtype="auto",
-    device_map="auto"
-)
-draft_tokenizer = AutoTokenizer.from_pretrained(draft_model_name)
-target_model = AutoModelForCausalLM.from_pretrained(
-    target_model_name,
-    torch_dtype="auto",
-    device_map="auto"
-)
-target_tokenizer = AutoTokenizer.from_pretrained(target_model_name)
-# NOTE(ruipan): maybe they should use the same tokenizer?
-dllm = AutoModelForCausalLM.from_pretrained(
-    dllm_name,
-    torch_dtype="auto",
-    device_map="auto",
-    trust_remote_code=True
-)
-dllm_tokenizer = AutoTokenizer.from_pretrained(dllm_name, trust_remote_code=True)
-
 
 # %%
 def get_dataset(dataset_name):
@@ -207,7 +180,7 @@ def get_next_n_tokens_dllm(dllm, orig_model_inputs, token_ids_so_far, n, output_
         'attention_mask': torch.cat([orig_model_inputs['attention_mask'], new_mask], dim=1)
     }
 
-    generated_ids = dllm.generate(
+    generated_ids, num_forward_passes = dllm.generate(
         # **new_model_inputs,
         new_model_inputs["input_ids"],
         max_new_tokens=output_seqlen,  # NOTE(ruipan): setting this to 8 will not lead to new tokens hmm
@@ -225,7 +198,7 @@ def get_next_n_tokens_dllm(dllm, orig_model_inputs, token_ids_so_far, n, output_
     generated_ids = generated_ids[0][len(new_model_inputs["input_ids"][0]):]
     generated_ids = generated_ids.tolist()[:n]  # only take the next n tokens
     
-    return generated_ids
+    return generated_ids, num_forward_passes
 
 
 
@@ -236,14 +209,50 @@ parser.add_argument("--dataset_name", type=str, choices=["aime", "math", "gpqa"]
                     help="Dataset")
 parser.add_argument("--output_dir", type=str, default="/data2/ruipan/diffspec", 
                     help="Where result pickle files (and output figures) will be written to")
+parser.add_argument("--dllm_dir", type=str, default=None, 
+                    help="Dir to the dLLM weights and (modified) modeling.py")
 parser.add_argument("--num_questions", type=int, default=1,
                     help="Number of questions to run profiling on")
+parser.add_argument("--veri_freq", type=int, default=5,
+                    help="Frequency of verification steps (in number of tokens)")
+parser.add_argument("--drafter_threshold", type=float, default=0.9,
+                    help="Threshold for confidence-adaptive decoding of the dLLM drafter model")
 args, _ = parser.parse_known_args()
-args.output_dir_figures = os.path.join(args.output_dir, "figures", "acc_rate_within_query", args.dataset_name)
-args.output_dir_pickles = os.path.join(args.output_dir, "pickles", "playground", "detailed_info", args.dataset_name)
+args.output_dir_figures = os.path.join(args.output_dir, "figures", "acc_rate_within_query", args.dataset_name, args.drafter_threshold)
+args.output_dir_pickles = os.path.join(args.output_dir, "pickles", "playground", "detailed_info", args.dataset_name, args.drafter_threshold)
 for d in [args.output_dir_figures, args.output_dir_pickles]:
     os.makedirs(d, exist_ok=True)
 dataset = get_dataset(args.dataset_name)
+
+# %%
+# draft_model_name = "Qwen/Qwen2.5-1.5B-Instruct"
+target_model_name = "Qwen/Qwen2.5-32B-Instruct"
+# target_model_name = "Qwen/Qwen2.5-7B-Instruct"
+# target_model_name = "Qwen/Qwen2.5-1.5B-Instruct"
+dllm_name = "Efficient-Large-Model/Fast_dLLM_v2_1.5B"
+
+# draft_model = AutoModelForCausalLM.from_pretrained(
+#     draft_model_name,
+#     torch_dtype="auto",
+#     device_map="auto"
+# )
+# draft_tokenizer = AutoTokenizer.from_pretrained(draft_model_name)
+target_model = AutoModelForCausalLM.from_pretrained(
+    target_model_name,
+    torch_dtype="auto",
+    device_map="auto"
+)
+target_tokenizer = AutoTokenizer.from_pretrained(target_model_name)
+# NOTE(ruipan): maybe they should use the same tokenizer?
+dllm = AutoModelForCausalLM.from_pretrained(
+    # dllm_name,
+    # "/data2/ruipan/Fast_dLLM_v2_1.5B",
+    args.dllm_dir if args.dllm_dir is not None else dllm_name,
+    torch_dtype="auto",
+    device_map="auto",
+    trust_remote_code=True
+)
+dllm_tokenizer = AutoTokenizer.from_pretrained(dllm_name, trust_remote_code=True)
 
 
 # %%
@@ -257,7 +266,6 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
     num_target_tokens = len(target_ids)
     print(f"Target model generated {num_target_tokens} tokens")
 
-    n = 5  # number of speculative tokens proposed each time
     accepted_tokens = 0
     rejected_tokens = 0
     current_token_ids = []  # prefix tokens generated so far
@@ -275,11 +283,17 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
         inner_bar = tqdm(total=num_target_tokens, miniters=25, desc=f"Verification (Problem {problem_id})",
                         position=1, leave=True, dynamic_ncols=False, file=sys.stdout)
 
+    num_speculation_rounds = 0
+    total_num_forward_passes = 0
     while len(current_token_ids) < len(target_ids):
+        num_speculation_rounds += 1
         # Get next n speculative tokens from draft model
         # draft_proposal = get_next_n_tokens(draft_model, orig_model_inputs, current_token_ids, n=n)
-        draft_proposal = get_next_n_tokens_dllm(dllm, orig_model_inputs, current_token_ids, n=n,
-                                                output_seqlen=32)
+        draft_proposal, num_forward_passes = get_next_n_tokens_dllm(dllm, orig_model_inputs, current_token_ids, 
+                                                n=args.veri_freq,  # number of speculative tokens proposed each time
+                                                output_seqlen=32,
+                                                threshold=args.drafter_threshold,)
+        total_num_forward_passes += num_forward_passes
         
         # The corresponding slice of ground-truth target tokens
         target_slice = target_ids[len(current_token_ids): len(current_token_ids) + n]
@@ -321,15 +335,24 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
 
     # Compute token acceptance rate
     acceptance_rate = accepted_tokens / (accepted_tokens + rejected_tokens)
-    print(f"{Colors.YELLOW}Problem {problem_id} acceptance rate: {acceptance_rate:.3f}{Colors.RESET}")
+    print(f"{Colors.YELLOW}drafter_threshold: {args.drafter_threshold}{Colors.RESET}")
+    print(f"{Colors.YELLOW}Problem {problem_id} acceptance rate: {acceptance_rate * 100:.1f}%{Colors.RESET}")
+    print(f"{Colors.YELLOW}Problem {problem_id} num. spec. rounds: {num_speculation_rounds}{Colors.RESET}")
+    print(f"{Colors.YELLOW}Problem {problem_id} drafter forward passes: {total_num_forward_passes}{Colors.RESET}")
     print(f"Accepted: {accepted_tokens}, Rejected: {rejected_tokens}, Total: {accepted_tokens + rejected_tokens}")
 
     # export
-    visualize_boolean_series(acceptance_decisions, output_dir=args.output_dir_figures, problem_id=problem_id)
+    # visualize_boolean_series(acceptance_decisions, output_dir=args.output_dir_figures, problem_id=problem_id)
+    visualize_boolean_series(acceptance_decisions, output_dir=None, problem_id=None)
     
-    with open(os.path.join(args.output_dir_pickles, f"{problem_id}.pickle"), "wb") as f:
-        pickle.dump(pickled_data, f)
-    with open(os.path.join(args.output_dir_pickles, f"{problem_id}.txt"), "w") as f:
-        pprint.pprint(pickled_data, stream=f)
+    pickled_data["num_speculation_rounds"] = num_speculation_rounds
+    pickled_data["total_num_forward_passes"] = total_num_forward_passes
+    pickled_data["accepted_tokens"] = accepted_tokens
+    pickled_data["rejected_tokens"] = rejected_tokens
+    
+    # with open(os.path.join(args.output_dir_pickles, f"{problem_id}.pickle"), "wb") as f:
+    #     pickle.dump(pickled_data, f)
+    # with open(os.path.join(args.output_dir_pickles, f"{problem_id}.txt"), "w") as f:
+    #     pprint.pprint(pickled_data, stream=f)
 
 # %%

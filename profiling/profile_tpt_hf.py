@@ -13,7 +13,7 @@ dllm_name = "Efficient-Large-Model/Fast_dLLM_v2_1.5B"
 dataset_name = "math"
 device = "cuda" if torch.cuda.is_available() else "cpu"
 n = 512  # number of new tokens to generate
-num_problems = 30  # adjust as needed
+num_problems = 1  # adjust as needed
 
 # ----------------------------
 # Load models and tokenizers
