@@ -170,7 +170,7 @@ def get_next_n_tokens(model, orig_model_inputs, token_ids_so_far, n):
 
 
 
-def get_next_n_tokens_dllm(dllm, orig_model_inputs, token_ids_so_far, n, output_seqlen, small_block_size, threshold, is_drafter):
+def get_next_n_tokens_dllm(dllm, orig_model_inputs, token_ids_so_far, veri_freq, output_seqlen, small_block_size, threshold, is_drafter):
     """Get the next n tokens from the model given the token IDs so far.
     """
     num_tokens_in_prompt = orig_model_inputs.input_ids.shape[1]
@@ -194,13 +194,15 @@ def get_next_n_tokens_dllm(dllm, orig_model_inputs, token_ids_so_far, n, output_
         # temperature=1.0,
         # top_p=1.0,
         # top_k=0.0,
+        # use_block_cache=True,  # NOTE(ruipan): doesn't seem to make a difference in latency...
         is_drafter=is_drafter,
+        veri_freq=veri_freq,
     )
     
     full_output_seqlen = generated_ids.shape[1]
     assert full_output_seqlen > num_tokens_in_prompt + len(token_ids_so_far), f"full_output_seqlen {full_output_seqlen}, num_tokens_in_prompt {num_tokens_in_prompt}, len(token_ids_so_far) {len(token_ids_so_far)}"
     generated_ids = generated_ids[0][len(new_model_inputs["input_ids"][0]):]
-    generated_ids = generated_ids.tolist()[:n]  # only take the next n tokens
+    generated_ids = generated_ids.tolist()[:veri_freq]  # only take the next n tokens
     
     if any(x in generated_ids for x in [151665, 151645]):
         special_token = "MASK" if 151665 in generated_ids else "STOP"
@@ -245,9 +247,9 @@ args.latency = {  # a6000, hf generate latencies
 # }
 
 args.overwrite = False
-args.drafter_threshold = 0.3
+args.drafter_threshold = 0.9
 args.dllm_dir = "/data2/ruipan/Fast_dLLM_v2_1.5B"
-args.max_new_tokens = 128
+args.max_new_tokens = 512
 
 # %%
 # draft_model_name = "Qwen/Qwen2.5-1.5B-Instruct"
@@ -314,11 +316,11 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
         # Get next n speculative tokens from draft model
         # draft_proposal = get_next_n_tokens(draft_model, orig_model_inputs, current_token_ids, n=n)
         draft_proposal, num_forward_passes, forward_pass_latencies = get_next_n_tokens_dllm(dllm, orig_model_inputs, current_token_ids, 
-                                                n=args.veri_freq,  # number of speculative tokens proposed each time
+                                                veri_freq=args.veri_freq,  # number of speculative tokens proposed each time
                                                 output_seqlen=32,
                                                 small_block_size=8,
                                                 threshold=args.drafter_threshold,
-                                                is_drafter=True,)
+                                                is_drafter=False,)
         total_num_forward_passes += num_forward_passes
         # print(f"forward_pass_latencies {forward_pass_latencies}")  # similar to TPT of 1.5B AR model
         
@@ -379,7 +381,7 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
     avg_tpt = total_tpt / num_target_tokens
     speedup = args.latency["target_tpt"] / avg_tpt
     theoretical_speedup = calculate_spec_decoding_speedup(
-        alpha=0.9,  # offline-profiled acceptance rate of AR 1.5B drafter
+        alpha=0.726,  # offline-profiled acceptance rate of AR 1.5B drafter
         gamma=args.veri_freq,
         c=args.latency["draft_fwd_pass"] / args.latency["target_tpt"],
     )

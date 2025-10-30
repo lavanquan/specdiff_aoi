@@ -176,8 +176,8 @@ def get_next_n_tokens_dllm(dllm, orig_model_inputs, token_ids_so_far, n, output_
 total_accepted_tokens = 0
 total_rejected_tokens = 0
 
-for problem_id in tqdm(range(50), desc="Problems", position=0):
-# for problem_id in range(1):
+# for problem_id in tqdm(range(50), desc="Problems", position=0):
+for problem_id in range(1):
     if dataset_name == "aime":
         problem = dataset["problem"][problem_id]
         options = None
@@ -236,6 +236,13 @@ for problem_id in tqdm(range(50), desc="Problems", position=0):
             
                 # FIXME(ruipan): math, question 1, len(target_ids) = 235, strange mismatch at len 148
             # print(f"Progress: len(current_token_ids) = {len(current_token_ids)}")
+        
+        if draft_proposal == target_slice:
+            free_token_index = len(current_token_ids) + n
+            if free_token_index >= len(target_ids):
+                continue  # no more free tokens to add
+            current_token_ids.append(target_ids[free_token_index])
+            accepted_tokens += 1  # XXX(ruipan): is this correct? how is acceptance rate defined?
 
         # If we’ve already matched the full target sequence, stop
         if len(current_token_ids) >= len(target_ids):
