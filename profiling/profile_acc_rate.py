@@ -4,6 +4,7 @@ import sys
 import time
 import torch
 import openai
+import argparse
 import transformers
 from tqdm import tqdm
 from openai import OpenAI
@@ -40,20 +41,6 @@ separate logical reasoning steps with two newline characters (\n\n), and put you
 Problem: {problem}
 """
 
-dataset_name = "math"
-
-if dataset_name == "aime":
-    dataset = load_dataset("HuggingFaceH4/aime_2024")["train"]
-elif dataset_name == "math":
-    dataset = load_dataset("HuggingFaceH4/MATH-500")["test"]
-elif dataset_name == "gpqa":
-    if os.getenv("HF_HUB_OFFLINE", "0") == "1":
-        dataset = load_from_disk("/scratch/gpfs/rp2773/hf_cache/datasets/gpqa")
-    else:    
-        dataset = load_dataset("Idavidrein/gpqa", "gpqa_diamond")["train"]
-else:
-    raise NotImplementedError
-    
 # %%
 draft_model_name = "Qwen/Qwen2.5-1.5B-Instruct"
 target_model_name = "Qwen/Qwen2.5-32B-Instruct"
@@ -175,30 +162,52 @@ def get_next_n_tokens_dllm(dllm, orig_model_inputs, token_ids_so_far, n, output_
 
 
 # %%
-TARGET_LEN = 512
+parser = argparse.ArgumentParser(description="Profiles the acceptance rate of speculative decoding within a single query.")
+parser.add_argument("--dataset_name", type=str, choices=["aime", "math", "gpqa"], default="math",
+                    help="Dataset")
+parser.add_argument("--num_questions", type=int, default=1,
+                    help="Number of questions to run profiling on")
+parser.add_argument("--target_len", type=int, default=512,
+                    help="Target model generation length")
+args, _ = parser.parse_known_args()
+
+
+# %%
+if args.dataset_name == "aime":
+    args.dataset = load_dataset("HuggingFaceH4/aime_2024")["train"]
+elif args.dataset_name == "math":
+    args.dataset = load_dataset("HuggingFaceH4/MATH-500")["test"]
+elif args.dataset_name == "gpqa":
+    if os.getenv("HF_HUB_OFFLINE", "0") == "1":
+        args.dataset = load_from_disk("/scratch/gpfs/rp2773/hf_cache/datasets/gpqa")
+    else:    
+        args.dataset = load_dataset("Idavidrein/gpqa", "gpqa_diamond")["train"]
+else:
+    raise NotImplementedError
+
 total_accepted_tokens = 0
 total_drafted_tokens = 0
-for problem_id in range(1):
-    if dataset_name == "aime":
-        problem = dataset["problem"][problem_id]
+for problem_id in range(args.num_questions):
+    if args.dataset_name == "aime":
+        problem = args.dataset["problem"][problem_id]
         options = None
-    elif dataset_name == "math":
-        problem = dataset["problem"][problem_id]
+    elif args.dataset_name == "math":
+        problem = args.dataset["problem"][problem_id]
         options = None
-    elif dataset_name == "gpqa":
-        problem = dataset["Question"][problem_id]
+    elif args.dataset_name == "gpqa":
+        problem = args.dataset["Question"][problem_id]
         options = {
-            "A": dataset["Correct Answer"][problem_id],
-            "B": dataset["Incorrect Answer 1"][problem_id],
-            "C": dataset["Incorrect Answer 2"][problem_id],
-            "D": dataset["Incorrect Answer 3"][problem_id],
+            "A": args.dataset["Correct Answer"][problem_id],
+            "B": args.dataset["Incorrect Answer 1"][problem_id],
+            "C": args.dataset["Incorrect Answer 2"][problem_id],
+            "D": args.dataset["Incorrect Answer 3"][problem_id],
         }
 
     messages = [
         {"role": "user", "content": system_prompt.format(problem=problem)},
     ]
 
-    target_ids, orig_model_inputs = get_target_token_ids(target_model, target_tokenizer, messages, target_len=TARGET_LEN)
+    target_ids, orig_model_inputs = get_target_token_ids(target_model, target_tokenizer, messages, target_len=args.target_len)
     print(f"Target (vanilla) generation length: {len(target_ids)} tokens")
     # print(f"Target token IDs: {target_ids}")
 
@@ -209,13 +218,13 @@ for problem_id in range(1):
     num_speculation_rounds = 0
 
     if is_interactive():
-        inner_bar = tqdm(total=TARGET_LEN, miniters=25,
+        inner_bar = tqdm(total=args.target_len, miniters=25,
                          desc=f"Generation (Problem {problem_id})",
                          position=1, leave=True, dynamic_ncols=False, file=sys.stdout)
 
 
     # Main speculative loop: propose n tokens from draft, verify them live with target model
-    while len(current_token_ids) < TARGET_LEN:
+    while len(current_token_ids) < args.target_len:
         num_speculation_rounds += 1
 
         # A. PROPOSE: Get next n speculative tokens from draft model based on current accepted prefix
