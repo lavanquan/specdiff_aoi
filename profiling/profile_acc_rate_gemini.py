@@ -94,7 +94,7 @@ def get_full_target_generation(model, tokenizer, messages, target_len):
     )
     return generated_ids[0][model_inputs.input_ids.shape[1]:].tolist(), model_inputs
 
-def get_speculative_tokens(model, tokenizer, orig_inputs, prefix_ids, n):
+def get_speculative_tokens_ar(model, orig_inputs, prefix_ids, n):
     """Generates n speculative tokens from the draft model given the current context."""
     if not prefix_ids:
         # Use the original prompt if the prefix is empty
@@ -107,7 +107,25 @@ def get_speculative_tokens(model, tokenizer, orig_inputs, prefix_ids, n):
         input_ids,
         max_new_tokens=n,
         do_sample=False,
-        # pad_token_id=tokenizer.eos_token_id,
+        temperature=0.0,
+        top_p=1.0,
+        top_k=0.0,
+    )
+    return generated_ids[0][input_ids.shape[1]:].tolist()
+
+def get_speculative_tokens_dllm(dllm, orig_inputs, prefix_ids, n):
+    """Generates n speculative tokens from the draft model given the current context."""
+    if not prefix_ids:
+        # Use the original prompt if the prefix is empty
+        input_ids = orig_inputs['input_ids']
+    else:
+        prefix_tensor = torch.tensor([prefix_ids], device=dllm.device, dtype=torch.long)
+        input_ids = torch.cat([orig_inputs['input_ids'], prefix_tensor], dim=1)
+
+    generated_ids = dllm.generate(
+        input_ids,
+        max_new_tokens=n,
+        do_sample=False,
         temperature=0.0,
         top_p=1.0,
         top_k=0.0,

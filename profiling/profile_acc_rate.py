@@ -56,8 +56,8 @@ else:
     
 # %%
 draft_model_name = "Qwen/Qwen2.5-1.5B-Instruct"
-# target_model_name = "Qwen/Qwen2.5-32B-Instruct"
-target_model_name = "Qwen/Qwen2.5-7B-Instruct"
+target_model_name = "Qwen/Qwen2.5-32B-Instruct"
+# target_model_name = "Qwen/Qwen2.5-7B-Instruct"
 dllm_name = "Efficient-Large-Model/Fast_dLLM_v2_1.5B"
 
 target_model = AutoModelForCausalLM.from_pretrained(
@@ -84,7 +84,7 @@ dllm_tokenizer = AutoTokenizer.from_pretrained(dllm_name, trust_remote_code=True
 
 
 # %%
-def get_target_token_ids(model, tokenizer, messages):
+def get_target_token_ids(model, tokenizer, messages, target_len):
     """Get the target series of token IDs for the given messages.
     """
     text = tokenizer.apply_chat_template(
@@ -98,7 +98,7 @@ def get_target_token_ids(model, tokenizer, messages):
     
     generated_ids = model.generate(
         **model_inputs,
-        max_new_tokens=512,  # was 512 in vanilla sd experiments
+        max_new_tokens=target_len,  # was 512 in vanilla sd experiments
         # use greedy decoding, not sampling
         do_sample=False,
         temperature=0.0,
@@ -112,7 +112,7 @@ def get_target_token_ids(model, tokenizer, messages):
     return generated_ids[0].tolist(), model_inputs
 
 
-def get_next_n_tokens(model, orig_model_inputs, token_ids_so_far, n):
+def get_next_n_tokens_ar(model, orig_model_inputs, token_ids_so_far, n):
     """Get the next n tokens from the model given the token IDs so far.
     """
     new_tokens = torch.tensor(token_ids_so_far, device=orig_model_inputs['input_ids'].device, dtype=torch.long).unsqueeze(0)
@@ -175,10 +175,9 @@ def get_next_n_tokens_dllm(dllm, orig_model_inputs, token_ids_so_far, n, output_
 
 
 # %%
-# ChatGPT generated. Looks a bit sus? [math] Total generation length on
-# q0 is ~512, whereas the original target generation length is ~200...
+TARGET_LEN = 512
 total_accepted_tokens = 0
-total_rejected_tokens = 0
+total_drafted_tokens = 0
 for problem_id in range(1):
     if dataset_name == "aime":
         problem = dataset["problem"][problem_id]
@@ -199,218 +198,121 @@ for problem_id in range(1):
         {"role": "user", "content": system_prompt.format(problem=problem)},
     ]
 
-    # Build initial input for both models (we no longer pre-generate the target sequence)
-    text = target_tokenizer.apply_chat_template(
-        messages, tokenize=False, add_generation_prompt=True
-    )
-    orig_model_inputs = target_tokenizer([text], return_tensors="pt").to(target_model.device)
-    
-    # run vanilla decoding
-    target_ids, _ = get_target_token_ids(target_model, target_tokenizer, messages)
-    print(f"Target generation length: {len(target_ids)} tokens")
-
-    # We will terminate either on EOS or after this many target tokens (safety cap)
-    max_target_tokens = 512
+    target_ids, orig_model_inputs = get_target_token_ids(target_model, target_tokenizer, messages, target_len=TARGET_LEN)
+    print(f"Target (vanilla) generation length: {len(target_ids)} tokens")
+    # print(f"Target token IDs: {target_ids}")
 
     current_token_ids = []  # prefix tokens accepted so far
     accepted_tokens = 0
     rejected_tokens = 0
-
-    if is_interactive():
-        inner_bar = tqdm(total=max_target_tokens, miniters=25,
-                         desc=f"Verification (Problem {problem_id})",
-                         position=1, leave=True, dynamic_ncols=False, file=sys.stdout)
-
-    n = 5  # speculative length proposed by draft model each round
+    n= 5  # speculative length proposed by draft model each round
     num_speculation_rounds = 0
 
+    if is_interactive():
+        inner_bar = tqdm(total=TARGET_LEN, miniters=25,
+                         desc=f"Generation (Problem {problem_id})",
+                         position=1, leave=True, dynamic_ncols=False, file=sys.stdout)
+
+
     # Main speculative loop: propose n tokens from draft, verify them live with target model
-    while len(current_token_ids) < max_target_tokens:
+    while len(current_token_ids) < TARGET_LEN:
         num_speculation_rounds += 1
 
-        # Get next n speculative tokens from draft model based on current accepted prefix
-        # draft_proposal = get_next_n_tokens(draft_model, orig_model_inputs, current_token_ids, n=n)
+        # A. PROPOSE: Get next n speculative tokens from draft model based on current accepted prefix
+        # draft_proposal = get_next_n_tokens_ar(draft_model, orig_model_inputs, current_token_ids, n=n)
         draft_proposal = get_next_n_tokens_dllm(dllm, orig_model_inputs, current_token_ids, n=n)
+        
+        if not draft_proposal: # Stop if the draft model has nothing to say
+            print(f"{Colors.RED}Warning: Draft model returned no tokens{Colors.RESET}")
+            break
 
-        print(f"\nSpeculation round {num_speculation_rounds}, current length: {len(current_token_ids)}")
-        print(f"draft_proposal {draft_proposal}")
-        decoded_proposal = target_tokenizer.decode(draft_proposal, skip_special_tokens=True)
-        print(f"draft_proposal (decoded): {decoded_proposal}")
+        # print(f"\nSpeculation round {num_speculation_rounds}, current length: {len(current_token_ids)}")
+        # print(f"draft_proposal {draft_proposal}")
+        # decoded_proposal = target_tokenizer.decode(draft_proposal, skip_special_tokens=True)
+        # print(f"draft_proposal (decoded): {decoded_proposal}")
 
-        # Verify each proposed token by querying the target model's next-token argmax (live)
-        for i, draft_tok in enumerate(draft_proposal):
-            # Build prefix (original prompt + already-accepted tokens)
-            prefix = orig_model_inputs["input_ids"][0].tolist() + current_token_ids
-            input_ids = torch.tensor([prefix], device=target_model.device)
+        # B. Verify proposed tokens
+        prefix_len = len(current_token_ids)
+        combined_ids = current_token_ids + draft_proposal
+        
+        verify_input_tensor = torch.tensor([combined_ids], device=target_model.device)
+        full_input_ids = torch.cat([orig_model_inputs['input_ids'], verify_input_tensor], dim=1)
 
-            with torch.no_grad():
-                # compute target model's next-token logits given the current accepted prefix
-                outputs = target_model(input_ids=input_ids)
-                logits = outputs.logits[:, -1, :]
-                target_next_tok = int(torch.argmax(logits, dim=-1).item())
+        with torch.no_grad():
+            outputs = target_model(input_ids=full_input_ids)
+            
+            # The logits for the draft tokens start after the prompt and the accepted prefix.
+            # The logit at sequence position 't' is the prediction for the token at 't+1'.
+            # So we need the logits from the token *before* the first draft token up to the one *before* the last.
+            start_index = orig_model_inputs['input_ids'].shape[1] + prefix_len - 1
+            end_index = start_index + len(draft_proposal)
+            verify_logits = outputs.logits[0, start_index:end_index]
+            
+            
+        # C. ACCEPT/REJECT
+        accepted_len = 0
+        for i in range(len(draft_proposal)):
+            # The target's prediction for position `i` is the argmax of the logits at position `i`
+            target_pred = torch.argmax(verify_logits[i, :], dim=-1).item()
+            # print(f"  Verifying draft token at position {i}: {draft_proposal[i]}. Target would have picked {target_pred}.")
 
-            print(f"Spec round {num_speculation_rounds}, token index {i}, draft_tok {draft_tok}, target_tok {target_next_tok}")
-
-            # Compare draft token to target model's argmax for the next token
-            if draft_tok == target_next_tok:
-                accepted_tokens += 1
-                current_token_ids.append(draft_tok)
-                if is_interactive():
-                    inner_bar.update(1)
-                # If target predicted EOS, stop
-                if draft_tok == target_tokenizer.eos_token_id:
-                    print("Target predicted EOS — finishing early.")
-                    break
+            if draft_proposal[i] == target_pred:
+                accepted_len += 1
             else:
-                # On first mismatch, we consider all remaining tokens in the proposal rejected
-                rejected_tokens += (n - i)
-                # Sync by appending the target model's actual next token
-                current_token_ids.append(target_next_tok)
-                if is_interactive():
-                    inner_bar.update(1)
-                # Stop verifying this draft proposal; go back to asking draft for next block
+                # Mismatch found. The correct token is the target's prediction.
+                final_token = target_pred
                 break
+        else:
+            # All draft tokens were accepted. Get a "bonus" token from the final logit.
+            final_token_logits = outputs.logits[0, -1, :]
+            final_token = torch.argmax(final_token_logits, dim=-1).item()
+            # print(f"  All draft tokens accepted! Bonus token is {final_token}.")
+            
+        # D. UPDATE
+        tokens_to_append = draft_proposal[:accepted_len] + [final_token]
+        current_token_ids.extend(tokens_to_append)
+        
+        accepted_tokens += accepted_len
+        rejected_tokens += len(draft_proposal) - accepted_len
+        
+        if is_interactive():
+            inner_bar.update(len(tokens_to_append))
 
-        # Termination conditions:
-        # - we hit EOS (detected above),
-        # - or we've reached the safety cap (max_target_tokens),
-        # - or we have no progress (defensive, unlikely)
-        if len(current_token_ids) >= max_target_tokens:
-            print(f"Reached max_target_tokens={max_target_tokens}; stopping.")
+        if target_tokenizer.eos_token_id in tokens_to_append:
             break
-        if (len(current_token_ids) > 0) and (current_token_ids[-1] == target_tokenizer.eos_token_id):
-            # last appended token was EOS
-            break
-
+        
     if is_interactive():
         inner_bar.close()
 
-    # Compute token acceptance rate for this problem
-    denom = (accepted_tokens + rejected_tokens)
-    if denom == 0:
-        acceptance_rate = 0.0
+    print(f"\n{Colors.BOLD}--- [Problem {problem_id}] Verification ---{Colors.RESET}")
+    final_spec_ids = current_token_ids[:len(target_ids)]
+    # print(f"Target (vanilla) IDs: {target_ids}")
+    # print(f"Final speculative IDs:  {final_spec_ids}")
+    if final_spec_ids != target_ids:
+        print(f"{Colors.RED}[Problem {problem_id}] Warning: Mismatch between speculative and vanilla decoding!{Colors.RESET}")
     else:
-        acceptance_rate = accepted_tokens / denom
+        print(f"{Colors.GREEN}[Problem {problem_id}] Success: Speculative decoding output exactly matches vanilla decoding output.{Colors.RESET}")
 
-    print(f"{Colors.YELLOW}Problem {problem_id} acceptance rate: {acceptance_rate:.3f}{Colors.RESET}")
-    print(f"Accepted: {accepted_tokens}, Rejected: {rejected_tokens}, Total considered: {denom}")
-    print(f"Number of speculation rounds: {num_speculation_rounds}")
-    print(f"Final output: {len(current_token_ids)} tokens")
+    # Compute token acceptance rate for this problem
+    drafted_tokens = num_speculation_rounds * n
+    acceptance_rate = accepted_tokens / drafted_tokens if drafted_tokens > 0 else 0.0
+
+    print(f"\n{Colors.BOLD}--- [Problem {problem_id}] Statistics ---{Colors.RESET}")
+    print(f"{Colors.YELLOW}[Problem {problem_id}] Acceptance rate: {acceptance_rate:.3f}{Colors.RESET}")
+    print(f"[Problem {problem_id}] Accepted: {accepted_tokens}, Rejected: {rejected_tokens}, Total drafted: {drafted_tokens}")
+    # print(f"[Problem {problem_id}] Number of speculation rounds: {num_speculation_rounds}")
+    print(f"[Problem {problem_id}] Final output: {len(current_token_ids)} tokens")
 
     total_accepted_tokens += accepted_tokens
-    total_rejected_tokens += rejected_tokens
+    total_drafted_tokens += drafted_tokens
+    
+    # print(f"target_ids: {target_ids}")
+    # print(f"target_ids decoded: {target_tokenizer.decode(target_ids)}")
+    # print(f"current_token_ids: {current_token_ids}")
+    # print(f"current_token_ids decoded: {target_tokenizer.decode(current_token_ids)}")
 
 # Overall acceptance rate across problems
-overall_denom = (total_accepted_tokens + total_rejected_tokens)
-if overall_denom == 0:
-    overall_acceptance_rate = 0.0
-else:
-    overall_acceptance_rate = total_accepted_tokens / overall_denom
+overall_acceptance_rate = total_accepted_tokens / total_drafted_tokens
 print(f"{Colors.CYAN}Overall acceptance rate: {overall_acceptance_rate:.3f}{Colors.RESET}")
 
-
-
-
-
-
 # %%
-# total_accepted_tokens = 0
-# total_rejected_tokens = 0
-
-# # for problem_id in tqdm(range(50), desc="Problems", position=0):
-# for problem_id in range(1):
-#     if dataset_name == "aime":
-#         problem = dataset["problem"][problem_id]
-#         options = None
-#     elif dataset_name == "math":
-#         problem = dataset["problem"][problem_id]
-#         options = None
-#     elif dataset_name == "gpqa":
-#         problem = dataset["Question"][problem_id]
-#         options = {
-#             "A": dataset["Correct Answer"][problem_id],
-#             "B": dataset["Incorrect Answer 1"][problem_id],
-#             "C": dataset["Incorrect Answer 2"][problem_id],
-#             "D": dataset["Incorrect Answer 3"][problem_id],
-#         }
-    
-#     messages = [
-#         {"role": "user", "content": system_prompt.format(problem=problem)},
-#     ]
-    
-#     # Build initial input for both models
-#     text = target_tokenizer.apply_chat_template(
-#         messages, tokenize=False, add_generation_prompt=True
-#     )
-#     orig_model_inputs = target_tokenizer([text], return_tensors="pt").to(target_model.device)
-#     current_token_ids = []
-
-
-#     n = 5  # number of speculative tokens proposed each time
-#     accepted_tokens = 0
-#     rejected_tokens = 0
-#     current_token_ids = []  # prefix tokens generated so far
-
-#     num_speculation_rounds = 0
-#     while len(current_token_ids) < len(target_ids):
-#         num_speculation_rounds += 1
-        
-#         # Get next n speculative tokens from draft model
-#         draft_proposal = get_next_n_tokens(draft_model, orig_model_inputs, current_token_ids, n=n)
-#         # draft_proposal = get_next_n_tokens_dllm(dllm, orig_model_inputs, current_token_ids, n=n)
-        
-#         # The corresponding slice of ground-truth target tokens
-#         target_slice = target_ids[len(current_token_ids): len(current_token_ids) + n]
-        
-#         print(f"Speculation round {num_speculation_rounds}, current length: {len(current_token_ids)}")
-#         print(f"target_slice {target_slice}, draft_proposal {draft_proposal}")
-
-#         # Compare draft proposal with target tokens one by one
-#         for i, (draft_tok, target_tok) in enumerate(zip(draft_proposal, target_slice)):
-#             print(f"Spec round {num_speculation_rounds}, token index {i}, draft_tok {draft_tok}, target_tok {target_tok}")
-#             if draft_tok == target_tok:
-#                 accepted_tokens += 1
-#                 if is_interactive():
-#                     inner_bar.update(1)
-#                 current_token_ids.append(draft_tok)
-#             else:
-#                 rejected_tokens += (n - i)  # all remaining tokens in this proposal are rejected
-#                 # replace with correct target token, sync with target model
-#                 current_token_ids.append(target_tok)
-#                 # print(f"Rejection, current length: {len(current_token_ids)}, draft_tok {draft_tok}, target_tok {target_tok}")
-#                 # print(f"draft token decoded: {draft_tokenizer.decode(draft_tok)}")
-#                 # print(f"target token decoded: {target_tokenizer.decode(target_tok)}")
-#                 break  # speculative generation diverged; go back to draft proposal step
-            
-#                 # FIXME(ruipan): math, question 1, len(target_ids) = 235, strange mismatch at len 148
-#             # print(f"Progress: len(current_token_ids) = {len(current_token_ids)}")
-        
-#         if draft_proposal == target_slice:  # this logic seems to be throwing off the acceptance rate by a lot
-#             free_token_index = len(current_token_ids) + n
-#             if free_token_index >= len(target_ids):
-#                 continue  # no more free tokens to add
-#             current_token_ids.append(target_ids[free_token_index])
-#             # accepted_tokens += 1  # NOTE(ruipan): should this free lunch token count as an accepted token?
-#             if is_interactive():
-#                 inner_bar.update(1)
-
-#         # If we’ve already matched the full target sequence, stop
-#         if len(current_token_ids) >= len(target_ids):
-#             break
-
-#     if is_interactive():
-#         inner_bar.close()
-
-#     # Compute token acceptance rate
-#     acceptance_rate = accepted_tokens / (accepted_tokens + rejected_tokens)
-#     print(f"{Colors.YELLOW}Problem {problem_id} acceptance rate: {acceptance_rate:.3f}{Colors.RESET}")
-#     print(f"Accepted: {accepted_tokens}, Rejected: {rejected_tokens}, Total: {accepted_tokens + rejected_tokens}")
-#     print(f"Number of speculation rounds: {num_speculation_rounds}")
-#     total_accepted_tokens += accepted_tokens
-#     total_rejected_tokens += rejected_tokens
-
-# overall_acceptance_rate = total_accepted_tokens / (total_accepted_tokens + total_rejected_tokens)
-# print(f"Overall acceptance rate: {overall_acceptance_rate:.3f}")
-
-# %%
-# print(target_tokenizer.decode(current_token_ids))
