@@ -17,7 +17,7 @@ transformers.logging.set_verbosity_error()
 
 sys.path.insert(1, os.path.dirname(os.getcwd()))
 from plotting import (
-    visualize_boolean_series,
+    visualize_acc_rate_over_time,
 )
 from utils import (
     calculate_spec_decoding_speedup,
@@ -132,9 +132,9 @@ def get_target_token_ids(model, tokenizer, messages, max_new_tokens):
         max_new_tokens=max_new_tokens,  # was 512 in vanilla sd experiments
         # use greedy decoding, not sampling
         do_sample=False,
-        # temperature=1.0,
-        # top_p=1.0,
-        # top_k=0.0,
+        temperature=0.0,
+        top_p=1.0,
+        top_k=0.0,
     )
     generated_ids = [
         output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
@@ -143,7 +143,7 @@ def get_target_token_ids(model, tokenizer, messages, max_new_tokens):
     return generated_ids[0].tolist(), model_inputs
 
 
-def get_next_n_tokens(model, orig_model_inputs, token_ids_so_far, n):
+def get_next_n_tokens_ar(model, orig_model_inputs, token_ids_so_far, n):
     """Get the next n tokens from the model given the token IDs so far.
     """
     new_tokens = torch.tensor(token_ids_so_far, device=orig_model_inputs['input_ids'].device, dtype=torch.long).unsqueeze(0)
@@ -160,9 +160,9 @@ def get_next_n_tokens(model, orig_model_inputs, token_ids_so_far, n):
         max_new_tokens=n,
         # use greedy decoding, not sampling
         do_sample=False,
-        # temperature=1.0,
-        # top_p=1.0,
-        # top_k=0.0,
+        temperature=0.0,
+        top_p=1.0,
+        top_k=0.0,
     )
     generated_ids = generated_ids[0][len(new_model_inputs["input_ids"][0]):]
     
@@ -191,9 +191,9 @@ def get_next_n_tokens_dllm(dllm, orig_model_inputs, token_ids_so_far, veri_freq,
         threshold=threshold,
         # use greedy decoding, not sampling
         do_sample=False,
-        # temperature=1.0,
-        # top_p=1.0,
-        # top_k=0.0,
+        temperature=1.0,
+        top_p=1.0,
+        top_k=0.0,
         # use_block_cache=True,  # NOTE(ruipan): doesn't seem to make a difference in latency...
         is_drafter=is_drafter,
         veri_freq=veri_freq,
@@ -270,14 +270,16 @@ target_model = AutoModelForCausalLM.from_pretrained(
     device_map="auto"
 )
 target_tokenizer = AutoTokenizer.from_pretrained(target_model_name)
-# NOTE(ruipan): maybe they should use the same tokenizer?
+
 dllm = AutoModelForCausalLM.from_pretrained(
     args.dllm_dir if args.dllm_dir is not None else dllm_name,
     torch_dtype="auto",
     device_map="auto",
     trust_remote_code=True
 )
-dllm_tokenizer = AutoTokenizer.from_pretrained(dllm_name, trust_remote_code=True)
+# NOTE(ruipan): drafter and target should probably share the same tokenizer?
+# dllm_tokenizer = AutoTokenizer.from_pretrained(dllm_name, trust_remote_code=True)
+dllm_tokenizer = target_tokenizer
 
 
 # %%
@@ -287,14 +289,15 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
         {"role": "user", "content": get_first_user_msg(problem, options)},
     ]
     
-    target_ids, orig_model_inputs = get_target_token_ids(target_model, target_tokenizer, messages, args.max_new_tokens)
+    target_ids, orig_model_inputs = get_target_token_ids(target_model, target_tokenizer, messages, max_new_tokens=args.max_new_tokens)
     num_target_tokens = len(target_ids)
-    print(f"Target model generated {num_target_tokens} tokens")
+    print(f"Target (vanilla) generation length: {num_target_tokens} tokens")
 
     accepted_tokens = 0
     rejected_tokens = 0
+    num_speculation_rounds = 0
+    total_num_forward_passes = 0
     current_token_ids = []  # prefix tokens generated so far
-    acceptance_decisions = []
     pickled_data = {
         "orig_model_inputs": orig_model_inputs,
         "target_ids": target_ids,
@@ -308,12 +311,11 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
         inner_bar = tqdm(total=num_target_tokens, miniters=25, desc=f"Verification (Problem {problem_id})",
                         position=1, leave=True, dynamic_ncols=False, file=sys.stdout)
 
-    num_speculation_rounds = 0
-    total_num_forward_passes = 0
     while len(current_token_ids) < len(target_ids):
         print(f"Speculation round {num_speculation_rounds}")
         num_speculation_rounds += 1
-        # Get next n speculative tokens from draft model
+        
+        # A. PROPOSE: Get next n speculative tokens from draft model based on current accepted prefix
         # draft_proposal = get_next_n_tokens(draft_model, orig_model_inputs, current_token_ids, n=n)
         draft_proposal, num_forward_passes, forward_pass_latencies = get_next_n_tokens_dllm(dllm, orig_model_inputs, current_token_ids, 
                                                 veri_freq=args.veri_freq,  # number of speculative tokens proposed each time
@@ -322,57 +324,81 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
                                                 threshold=args.drafter_threshold,
                                                 is_drafter=True,)
         total_num_forward_passes += num_forward_passes
-        # print(f"forward_pass_latencies {forward_pass_latencies}")  # similar to TPT of 1.5B AR model
+        # print(f"forward_pass_latencies {forward_pass_latencies}")  # NOTE(ruipan): seems to be similar to TPT of 1.5B AR model
         
-        # The corresponding slice of ground-truth target tokens
-        target_slice = target_ids[len(current_token_ids): len(current_token_ids) + args.veri_freq]
+        if not draft_proposal: # Stop if the draft model has nothing to say
+            print(f"{Colors.RED}Warning: Draft model returned no tokens{Colors.RESET}")
+            break
+        
+        # B. Verify proposed tokens
+        prefix_len = len(current_token_ids)
+        combined_ids = current_token_ids + draft_proposal
+        
+        verify_input_tensor = torch.tensor([combined_ids], device=target_model.device)
+        full_input_ids = torch.cat([orig_model_inputs['input_ids'], verify_input_tensor], dim=1)
 
+        with torch.no_grad():
+            outputs = target_model(input_ids=full_input_ids)
+            
+            # The logits for the draft tokens start after the prompt and the accepted prefix.
+            # The logit at sequence position 't' is the prediction for the token at 't+1'.
+            # So we need the logits from the token *before* the first draft token up to the one *before* the last.
+            start_index = orig_model_inputs['input_ids'].shape[1] + prefix_len - 1
+            end_index = start_index + len(draft_proposal)
+            verify_logits = outputs.logits[0, start_index:end_index]
+            target_tokens = torch.argmax(verify_logits, dim=-1).tolist()
+        
+        # C. ACCEPT/REJECT
+        accepted_len = 0
+        for i in range(len(draft_proposal)):
+            # The target's prediction for position `i` is the argmax of the logits at position `i`
+            target_pred = torch.argmax(verify_logits[i, :], dim=-1).item()
+            # print(f"  Verifying draft token at position {i}: {draft_proposal[i]}. Target would have picked {target_pred}.")
+
+            if draft_proposal[i] == target_pred:
+                accepted_len += 1
+            else:
+                # Mismatch found. The correct token is the target's prediction.
+                final_token = target_pred
+                break
+        else:
+            # All draft tokens were accepted. Get a "bonus" token from the final logit.
+            final_token_logits = outputs.logits[0, -1, :]
+            final_token = torch.argmax(final_token_logits, dim=-1).item()
+            # print(f"  All draft tokens accepted! Bonus token is {final_token}.")
+            
+        # D. UPDATE
+        tokens_to_append = draft_proposal[:accepted_len] + [final_token]
+        current_token_ids.extend(tokens_to_append)
+        
+        accepted_tokens += accepted_len
+        rejected_tokens += len(draft_proposal) - accepted_len
+        
         info_this_round = {
-            "current_token_ids": current_token_ids.copy(),
+            "current_token_ids": current_token_ids,
+            "target_tokens": target_tokens,
             "draft_proposal": draft_proposal,
-            "target_slice": target_slice,
+            "accepted_len": accepted_len,
+            "prefix_len": prefix_len,
         }
         pickled_data["status_per_round"].append(info_this_round)
+        
+        if is_interactive():
+            inner_bar.update(len(tokens_to_append))
 
-        # Compare draft proposal with target tokens one by one
-        for draft_tok, target_tok in zip(draft_proposal, target_slice):
-            if is_interactive():
-                inner_bar.update(1)
-            if draft_tok == target_tok:
-                accepted_tokens += 1
-                current_token_ids.append(draft_tok)
-                acceptance_decisions.append(True)
-            else:
-                rejected_tokens += 1
-                # replace with correct target token, sync with target model
-                current_token_ids.append(target_tok)
-                acceptance_decisions.append(False)
-                break  # speculative generation diverged; go back to draft proposal step
-            
-        # if all draft tokens are accepted, add one more token for free (from the verification prefill)
-        if draft_proposal == target_slice:
-            free_token_index = len(current_token_ids) + args.veri_freq
-            print(f"{Colors.GREEN}All {len(draft_proposal)} speculative tokens accepted this round! free_token_index {free_token_index}{Colors.RESET}")
-            if free_token_index >= len(target_ids):
-                continue  # no more free tokens to add
-            current_token_ids.append(target_ids[free_token_index])
-            accepted_tokens += 1  # XXX(ruipan): is this correct? how is acceptance rate defined?
-            acceptance_decisions.append(True)
-
-        # If we’ve already matched the full target sequence, stop
-        if len(current_token_ids) >= len(target_ids):
+        if target_tokenizer.eos_token_id in tokens_to_append:
             break
 
     if is_interactive():
         inner_bar.close()
 
     # Compute token acceptance rate
-    acceptance_rate = accepted_tokens / (accepted_tokens + rejected_tokens)
-    print(f"{Colors.MAGENTA}drafter_threshold: {args.drafter_threshold}{Colors.RESET}")
-    print(f"{Colors.MAGENTA}Problem {problem_id} acceptance rate: {acceptance_rate * 100:.1f}% ({accepted_tokens}/{num_target_tokens}){Colors.RESET}")
-    print(f"{Colors.MAGENTA}Problem {problem_id} avg fwd passes/round: {total_num_forward_passes / num_speculation_rounds:.2f} ({total_num_forward_passes}/{num_speculation_rounds}){Colors.RESET}")
-    if accepted_tokens + rejected_tokens != num_target_tokens:
-        print(f"{Colors.RED}Warning: accepted + rejected != num_target_tokens!{Colors.RESET}")
+    drafted_tokens = num_speculation_rounds * args.veri_freq
+    acceptance_rate = accepted_tokens / drafted_tokens
+    print(f"\n{Colors.BOLD}--- [Problem {problem_id}] Statistics ---{Colors.RESET}")
+    print(f"{Colors.MAGENTA}[Problem {problem_id}] drafter_threshold: {args.drafter_threshold}{Colors.RESET}")
+    print(f"{Colors.MAGENTA}[Problem {problem_id}] acceptance rate: {acceptance_rate * 100:.1f}% ({accepted_tokens}/{drafted_tokens}){Colors.RESET}")
+    print(f"{Colors.MAGENTA}[Problem {problem_id}] avg fwd passes/round: {total_num_forward_passes / num_speculation_rounds:.2f} ({total_num_forward_passes}/{num_speculation_rounds}){Colors.RESET}")
     
     # compute e2e latency speedup
     latency_draft = total_num_forward_passes * args.latency["draft_fwd_pass"]  # ms
@@ -381,18 +407,19 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
     avg_tpt = total_tpt / num_target_tokens
     speedup = args.latency["target_tpt"] / avg_tpt
     theoretical_speedup = calculate_spec_decoding_speedup(
-        alpha=0.785,  # offline-profiled acceptance rate of AR 1.5B drafter
+        alpha=0.686,  # offline-profiled acceptance rate of AR 1.5B drafter on MATH
         gamma=args.veri_freq,
         c=args.latency["draft_fwd_pass"] / args.latency["target_tpt"],
     )
-    print(f"{Colors.MAGENTA}Avg TPT of SD: {avg_tpt:.2f}ms (Speedup: {speedup:.2f}x; Drafter latency ratio {latency_draft / total_tpt * 100:.1f}%){Colors.RESET}")
-    print(f"{Colors.MAGENTA}Theoretical speedup of vanilla SD: {theoretical_speedup:.2f}x. Win: {speedup / theoretical_speedup:.3f}x.{Colors.RESET}")
+    print(f"{Colors.MAGENTA}[Problem {problem_id}] Avg TPT of SD: {avg_tpt:.2f}ms (Speedup: {speedup:.2f}x; Drafter latency ratio {latency_draft / total_tpt * 100:.1f}%){Colors.RESET}")
+    print(f"{Colors.MAGENTA}[Problem {problem_id}] Theoretical speedup of vanilla SD: {theoretical_speedup:.2f}x. Win: {speedup / theoretical_speedup:.3f}x.{Colors.RESET}")
 
     # export
+    status_per_round = pickled_data["status_per_round"]
     if args.overwrite:
-        visualize_boolean_series(acceptance_decisions, output_dir=args.output_dir_figures, problem_id=problem_id)
+        visualize_acc_rate_over_time(status_per_round, output_dir=args.output_dir_figures, problem_id=problem_id)
     else:
-        visualize_boolean_series(acceptance_decisions, output_dir=None, problem_id=None)
+        visualize_acc_rate_over_time(status_per_round, output_dir=None, problem_id=None)
     
     pickled_data["num_speculation_rounds"] = num_speculation_rounds
     pickled_data["total_num_forward_passes"] = total_num_forward_passes
