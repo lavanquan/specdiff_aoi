@@ -284,6 +284,7 @@ dllm_tokenizer = target_tokenizer
 
 # %%
 for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
+    transformers.set_seed(42)  # reproducibility for each question
     problem, options = format_problem_and_options(args, problem_id)
     messages = [
         {"role": "user", "content": get_first_user_msg(problem, options)},
