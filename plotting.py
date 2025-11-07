@@ -10,16 +10,18 @@ def get_boolean_decision_from_status_per_round(status_per_round, veri_freq):
     for round_id, round_info in enumerate(status_per_round):
         accepted_len = round_info["accepted_len"]
         
-        if round_id == 95:
-            print(f"current len(decisions): {len(decisions)}")
-            print(f"prefix_len: {round_info["prefix_len"]}")
-            print(f"draft_proposal: {round_info["draft_proposal"]}")
-            print(f"target_tokens: {round_info["target_tokens"]}")
-            print(f"accepted_len: {round_info["accepted_len"]}")
+        # if round_id == 95:
+        #     print(f"current len(decisions): {len(decisions)}")
+        #     print(f"prefix_len: {round_info["prefix_len"]}")
+        #     print(f"draft_proposal: {round_info["draft_proposal"]}")
+        #     print(f"target_tokens: {round_info["target_tokens"]}")
+        #     print(f"accepted_len: {round_info["accepted_len"]}")
         
         if accepted_len == veri_freq:
+            print(f"Round {round_id} accepted all tokens!")
             decisions.extend([True] * (veri_freq + 1))  # all accepted plus one bonus token
         else:
+            print(f"Round {round_id} accepted {accepted_len} tokens.")
             decisions.extend([True] * accepted_len)
             decisions.append(False)  # first rejected token
         
@@ -47,8 +49,8 @@ def visualize_acc_rate_over_time(status_per_round, figsize=(12, 3), output_dir=N
     veri_freq = len(status_per_round[0]["draft_proposal"])
     decisions = get_boolean_decision_from_status_per_round(status_per_round, veri_freq)
     
-    # print(prefix_lens)
-    # print(acc_rates)
+    print(f"prefix_lens: {prefix_lens}")
+    print(f"acc_rates: {acc_rates}")
     
     ax2.plot(prefix_lens, acc_rates, marker='o', linewidth=2, label="Acceptance Rate")
     ax2.set_ylim(-0.1, 1.1)

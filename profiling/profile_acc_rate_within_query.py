@@ -254,7 +254,7 @@ args.max_new_tokens = 512
 # %%
 # draft_model_name = "Qwen/Qwen2.5-1.5B-Instruct"
 target_model_name = "Qwen/Qwen2.5-32B-Instruct"
-# target_model_name = "Qwen/Qwen2.5-7B-Instruct"  # easier debugging
+# target_model_name = "Qwen/Qwen2.5-7B-Instruct"  # for easier debugging
 # target_model_name = "Qwen/Qwen2.5-1.5B-Instruct"
 dllm_name = "Efficient-Large-Model/Fast_dLLM_v2_1.5B"
 
@@ -313,7 +313,7 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
                         position=1, leave=True, dynamic_ncols=False, file=sys.stdout)
 
     while len(current_token_ids) < len(target_ids):
-        print(f"Speculation round {num_speculation_rounds}")
+        print(f"--- Speculation round {num_speculation_rounds} ---")
         num_speculation_rounds += 1
         
         # A. PROPOSE: Get next n speculative tokens from draft model based on current accepted prefix
@@ -330,6 +330,10 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
         if not draft_proposal: # Stop if the draft model has nothing to say
             print(f"{Colors.RED}Warning: Draft model returned no tokens{Colors.RESET}")
             break
+        
+        if len(draft_proposal) < args.veri_freq:
+            print(f"{Colors.RED}Warning: Draft model returned fewer tokens ({len(draft_proposal)}) than veri_freq ({args.veri_freq})!{Colors.RESET}")
+            # break  # FIXME: is this sth we should guarantee?
         
         # B. Verify proposed tokens
         prefix_len = len(current_token_ids)
@@ -348,6 +352,8 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
             end_index = start_index + len(draft_proposal)
             verify_logits = outputs.logits[0, start_index:end_index]
             target_tokens = torch.argmax(verify_logits, dim=-1).tolist()
+            if len(target_tokens) < args.veri_freq:
+                print(f"{Colors.RED}Warning: target_tokens len ({len(target_tokens)}) is smaller than veri_freq ({args.veri_freq})!{Colors.RESET}")
         
         # C. ACCEPT/REJECT
         accepted_len = 0
@@ -367,7 +373,9 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
             final_token_logits = outputs.logits[0, -1, :]
             final_token = torch.argmax(final_token_logits, dim=-1).item()
             # print(f"  All draft tokens accepted! Bonus token is {final_token}.")
-            
+        
+        print(f"--- Speculation round {num_speculation_rounds}: acceptance rate {accepted_len / args.veri_freq} ({accepted_len}/{args.veri_freq}) ---")
+        
         # D. UPDATE
         tokens_to_append = draft_proposal[:accepted_len] + [final_token]
         current_token_ids.extend(tokens_to_append)
@@ -397,23 +405,23 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
     drafted_tokens = num_speculation_rounds * args.veri_freq
     acceptance_rate = accepted_tokens / drafted_tokens
     print(f"\n{Colors.BOLD}--- [Problem {problem_id}] Statistics ---{Colors.RESET}")
-    print(f"{Colors.MAGENTA}[Problem {problem_id}] drafter_threshold: {args.drafter_threshold}{Colors.RESET}")
-    print(f"{Colors.MAGENTA}[Problem {problem_id}] acceptance rate: {acceptance_rate * 100:.1f}% ({accepted_tokens}/{drafted_tokens}){Colors.RESET}")
-    print(f"{Colors.MAGENTA}[Problem {problem_id}] avg fwd passes/round: {total_num_forward_passes / num_speculation_rounds:.2f} ({total_num_forward_passes}/{num_speculation_rounds}){Colors.RESET}")
+    print(f"{Colors.CYAN}[Problem {problem_id}] drafter_threshold: {args.drafter_threshold}{Colors.RESET}")
+    print(f"{Colors.CYAN}[Problem {problem_id}] acceptance rate: {acceptance_rate * 100:.1f}% ({accepted_tokens}/{drafted_tokens}) (total output tokens: {len(current_token_ids)}){Colors.RESET}")
+    print(f"{Colors.CYAN}[Problem {problem_id}] avg fwd passes/round: {total_num_forward_passes / num_speculation_rounds:.2f} ({total_num_forward_passes}/{num_speculation_rounds}){Colors.RESET}")
     
     # compute e2e latency speedup
     latency_draft = total_num_forward_passes * args.latency["draft_fwd_pass"]  # ms
     latency_target = num_speculation_rounds * args.latency["target_tpt"]
     total_tpt = latency_draft + latency_target
-    avg_tpt = total_tpt / num_target_tokens
+    avg_tpt = total_tpt / len(current_token_ids)
     speedup = args.latency["target_tpt"] / avg_tpt
     theoretical_speedup = calculate_spec_decoding_speedup(
-        alpha=0.686,  # offline-profiled acceptance rate of AR 1.5B drafter on MATH
+        alpha=0.605,  # offline-profiled acceptance rate of AR 1.5B drafter on MATH
         gamma=args.veri_freq,
         c=args.latency["draft_fwd_pass"] / args.latency["target_tpt"],
     )
-    print(f"{Colors.MAGENTA}[Problem {problem_id}] Avg TPT of SD: {avg_tpt:.2f}ms (Speedup: {speedup:.2f}x; Drafter latency ratio {latency_draft / total_tpt * 100:.1f}%){Colors.RESET}")
-    print(f"{Colors.MAGENTA}[Problem {problem_id}] Theoretical speedup of vanilla SD: {theoretical_speedup:.2f}x. Win: {speedup / theoretical_speedup:.3f}x.{Colors.RESET}")
+    print(f"{Colors.CYAN}[Problem {problem_id}] Avg TPT of SD: {avg_tpt:.2f}ms (Speedup: {speedup:.2f}x; Drafter latency ratio {latency_draft / total_tpt * 100:.1f}%){Colors.RESET}")
+    print(f"{Colors.CYAN}[Problem {problem_id}] Theoretical speedup of vanilla SD: {theoretical_speedup:.2f}x. Win: {speedup / theoretical_speedup:.3f}x.{Colors.RESET}")
 
     # export
     status_per_round = pickled_data["status_per_round"]
