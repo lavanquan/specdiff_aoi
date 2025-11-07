@@ -219,8 +219,6 @@ def get_next_n_tokens_dllm(dllm, orig_model_inputs, token_ids_so_far, veri_freq,
 parser = argparse.ArgumentParser(description="Profiles the acceptance rate of speculative decoding within a single query.")
 parser.add_argument("--dataset_name", type=str, choices=["aime", "math", "gpqa"], default="math",
                     help="Dataset")
-parser.add_argument("--draft_model", type=str, choices=["ar", "dllm"], default="dllm",
-                    help="Type of draft model to use")  # TODO: add a "both" option
 parser.add_argument("--output_dir", type=str, default="/data2/ruipan/diffspec", 
                     help="Where result pickle files (and output figures) will be written to")
 parser.add_argument("--dllm_dir", type=str, default=None, 
@@ -244,16 +242,15 @@ parser.add_argument('--overwrite', action='store_true', help='Overwrite existing
 args, _ = parser.parse_known_args()
 logging.basicConfig(
     level=getattr(logging, args.log_level),
-    # format="%(asctime)s - %(levelname)s - %(message)s"
-    format="[%(levelname)s] %(message)s"
+    format="[%(levelname)s] %(message)s",
 )
 
 ######custom fields for easier debugging######
-args.overwrite = True
-args.run_ar = True
-# args.drafter_thresholds = [0.7, 0.5, 0.3, 0.1, 0.01]
-args.drafter_thresholds = [0.9]
-args.dllm_dir = "/data2/ruipan/Fast_dLLM_v2_1.5B"
+# # args.overwrite = True
+# args.run_ar = True
+# args.drafter_thresholds = [0.9, 0.7, 0.5, 0.3, 0.1, 0.01]
+# # args.drafter_thresholds = [0.9]
+# args.dllm_dir = "/data2/ruipan/Fast_dLLM_v2_1.5B"
 ######custom fields for easier debugging######
 
 args.drafter_configs = [("ar", None)] if args.run_ar else []
@@ -427,9 +424,8 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
         drafted_tokens = num_speculation_rounds * args.veri_freq
         acceptance_rate = accepted_tokens / drafted_tokens
         logging.info(f"{Colors.BOLD}--- [Problem {problem_id}, {draft_type}_{drafter_threshold}] Statistics ---{Colors.RESET}")
-        logging.info(f"{Colors.CYAN}[Problem {problem_id}, {draft_type}_{drafter_threshold}] drafter_threshold: {drafter_threshold}{Colors.RESET}")
-        logging.info(f"{Colors.CYAN}[Problem {problem_id}, {draft_type}_{drafter_threshold}] acceptance rate: {acceptance_rate * 100:.1f}% ({accepted_tokens}/{drafted_tokens}) (total output tokens: {len(current_token_ids)}){Colors.RESET}")
-        logging.info(f"{Colors.CYAN}[Problem {problem_id}, {draft_type}_{drafter_threshold}] avg fwd passes/round: {total_num_forward_passes / num_speculation_rounds:.2f} ({total_num_forward_passes}/{num_speculation_rounds}){Colors.RESET}")
+        logging.info(f"{Colors.CYAN}[Problem {problem_id}, {draft_type}_{drafter_threshold}] Acceptance rate: {acceptance_rate * 100:.1f}% ({accepted_tokens}/{drafted_tokens}){Colors.RESET}")
+        logging.info(f"{Colors.CYAN}[Problem {problem_id}, {draft_type}_{drafter_threshold}] Avg fwd passes/round: {total_num_forward_passes / num_speculation_rounds:.2f} ({total_num_forward_passes}/{num_speculation_rounds}) (total output tokens: {len(current_token_ids)}){Colors.RESET}")
         
         # compute e2e latency speedup
         latency_draft = total_num_forward_passes * args.latency["draft_fwd_pass"]  # ms

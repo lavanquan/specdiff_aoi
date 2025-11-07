@@ -15,13 +15,14 @@
 #SBATCH --partition=pli-lc
 #SBATCH --account=ravi-group
 
-# CLUSTER="ravi"
-CLUSTER="della"
+CLUSTER="ravi"
+# CLUSTER="della"
 
 # initialization: set environment variables based on the cluster
 if [ "$CLUSTER" = "ravi" ]; then
     DATA_DIR="/home/ruipan/data2"
     DLLM_DIR="/data2/ruipan/Fast_dLLM_v2_1.5B"
+    source /data2/ruipan/miniconda3/etc/profile.d/conda.sh
 elif [ "$CLUSTER" = "della" ]; then
     DATA_DIR="/scratch/gpfs/RAVIAN/rp2773/data"
     DLLM_DIR="/hoome/rp2773/data/Fast_dLLM_v2_1.5B"
@@ -37,27 +38,24 @@ else
 fi
 conda activate vllm_dllm
 
-# DATASET_NAME="aime"
-# NUM_QUESTIONS=30
-DATASET_NAME="math"
-NUM_QUESTIONS=30
+DATASETS=("math" "aime")
 OUTPUT_DIR="${DATA_DIR}/diffspec"
-# DRAFTER_THRESHOLD=0.9
-DRAFTER_THRESHOLDS=(0.01 0.3 0.5 0.7 0.9)
+# actual run
+NUM_QUESTIONS=30
+DRAFTER_THRESHOLDS=(0.9 0.7 0.5 0.3 0.1 0.01)
+# debug
+# NUM_QUESTIONS=1
+# DRAFTER_THRESHOLDS=(0.9)
 
+timestamp=$(date +"%Y_%m_%d_%H_%M")  # equivalent of datetime.now().strftime("%Y_%m_%d_%H_%M") in python
 
-for DRAFTER_THRESHOLD in "${DRAFTER_THRESHOLDS[@]}"; do
+for DATASET_NAME in "${DATASETS[@]}"; do
     python ../profiling/profile_acc_rate_within_query.py \
         --dataset_name "${DATASET_NAME}" \
         --output_dir "${OUTPUT_DIR}" \
         --dllm_dir "${DLLM_DIR}" \
         --num_questions "${NUM_QUESTIONS}" \
-        --drafter_threshold "${DRAFTER_THRESHOLD}"
+        --drafter_thresholds "${DRAFTER_THRESHOLDS[@]}" \
+        --run_ar \
+        --overwrite > "${OUTPUT_DIR}/logs/${timestamp}_${DATASET_NAME}.ansi" 2>&1
 done
-
-# python ../profiling/profile_acc_rate_within_query.py \
-#     --dataset_name "${DATASET_NAME}" \
-#     --output_dir "${OUTPUT_DIR}" \
-#     --dllm_conf_thres "${DLLM_CONF_THRES}" \
-#     --num_questions "${NUM_QUESTIONS}"
-
