@@ -40,5 +40,5 @@ NUM_QUESTIONS=30
 OUTPUT_DIR="${DATA_DIR}/diffspec"
 
 
-python ../profiling/profile_tpt_hf.py > "${OUTPUT_DIR}/logs/profile_tpt_hf.txt"
+python ../profiling/profile_tpt_hf.py > "${OUTPUT_DIR}/logs/profile_tpt_hf.log"
 

@@ -6,6 +6,7 @@ import torch
 import openai
 import pickle
 import pprint
+import logging
 import argparse
 import transformers
 from tqdm import tqdm
@@ -13,6 +14,7 @@ from openai import OpenAI
 from datasets import load_dataset, load_from_disk
 from transformers import AutoModelForCausalLM, AutoTokenizer
 # transformers.logging.set_verbosity_info()
+# transformers.logging.set_verbosity_warning()
 transformers.logging.set_verbosity_error()
 
 sys.path.insert(1, os.path.dirname(os.getcwd()))
@@ -125,13 +127,13 @@ def get_target_token_ids(model, tokenizer, messages, max_new_tokens):
     )
     model_inputs = tokenizer([text], return_tensors="pt").to(model.device)
     num_input_tokens = model_inputs.input_ids.shape[1]
-    print(f"num_input_tokens {num_input_tokens}, first eight tokens: {model_inputs.input_ids[0, :8].tolist()}")
+    logging.debug(f"num_input_tokens {num_input_tokens}, first eight tokens: {model_inputs.input_ids[0, :8].tolist()}")
     
     generated_ids = model.generate(
         **model_inputs,
         max_new_tokens=max_new_tokens,  # was 512 in vanilla sd experiments
         # use greedy decoding, not sampling
-        do_sample=False,
+        do_sample=False,  # overrides all below sampling params, but setting them just in case
         temperature=0.0,
         top_p=1.0,
         top_k=0.0,
@@ -206,7 +208,7 @@ def get_next_n_tokens_dllm(dllm, orig_model_inputs, token_ids_so_far, veri_freq,
     
     if any(x in generated_ids for x in [151665, 151645]):
         special_token = "MASK" if 151665 in generated_ids else "STOP"
-        print(f"{Colors.RED}Generated ids contain {special_token} tokens! {generated_ids}{Colors.RESET}")
+        logging.info(f"{Colors.RED}Generated ids contain {special_token} tokens! {generated_ids}{Colors.RESET}")
     
     return generated_ids, num_forward_passes, forward_pass_latencies
 
@@ -217,6 +219,8 @@ def get_next_n_tokens_dllm(dllm, orig_model_inputs, token_ids_so_far, veri_freq,
 parser = argparse.ArgumentParser(description="Profiles the acceptance rate of speculative decoding within a single query.")
 parser.add_argument("--dataset_name", type=str, choices=["aime", "math", "gpqa"], default="math",
                     help="Dataset")
+parser.add_argument("--draft_model", type=str, choices=["ar", "dllm"], default="dllm",
+                    help="Type of draft model to use")  # TODO: add a "both" option
 parser.add_argument("--output_dir", type=str, default="/data2/ruipan/diffspec", 
                     help="Where result pickle files (and output figures) will be written to")
 parser.add_argument("--dllm_dir", type=str, default=None, 
@@ -227,16 +231,35 @@ parser.add_argument("--max_new_tokens", type=int, default=512,
                     help="Max new tokens from the target model")
 parser.add_argument("--veri_freq", type=int, default=5,
                     help="Frequency of verification steps (in number of tokens)")
-parser.add_argument("--drafter_threshold", type=float, default=0.9,
-                    help="Threshold for confidence-adaptive decoding of the dLLM drafter model")
+parser.add_argument("--drafter_thresholds", type=float, nargs="+",  # one or more float thresholds
+                    default=[0.9],
+                    help="Threshold for confidence-adaptive decoding of the dLLM drafter model (e.g., --drafter_thresholds 0.1 0.5 0.9)")
+parser.add_argument("--log_level",
+                    type=str,
+                    default="INFO",
+                    choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+                    help="Set the logging level")
+parser.add_argument('--run_ar', action='store_true', help='Run the AR drafter to compare speedups')
 parser.add_argument('--overwrite', action='store_true', help='Overwrite existing output pickles and figures')
 args, _ = parser.parse_known_args()
-args.output_dir_figures = os.path.join(args.output_dir, "figures", "acc_rate_within_query", args.dataset_name, str(args.drafter_threshold))
-args.output_dir_pickles = os.path.join(args.output_dir, "pickles", "playground", "detailed_info", args.dataset_name, str(args.drafter_threshold))
-for d in [args.output_dir_figures, args.output_dir_pickles]:
-    os.makedirs(d, exist_ok=True)
-dataset = get_dataset(args.dataset_name)
+logging.basicConfig(
+    level=getattr(logging, args.log_level),
+    # format="%(asctime)s - %(levelname)s - %(message)s"
+    format="[%(levelname)s] %(message)s"
+)
 
+######custom fields for easier debugging######
+args.overwrite = True
+args.run_ar = True
+# args.drafter_thresholds = [0.7, 0.5, 0.3, 0.1, 0.01]
+args.drafter_thresholds = [0.9]
+args.dllm_dir = "/data2/ruipan/Fast_dLLM_v2_1.5B"
+######custom fields for easier debugging######
+
+args.drafter_configs = [("ar", None)] if args.run_ar else []
+args.drafter_configs.extend([("dllm", thr) for thr in args.drafter_thresholds])
+
+dataset = get_dataset(args.dataset_name)
 args.latency = {  # a6000, hf generate latencies
     "draft_fwd_pass": 28,  # ms; dLLM 1.5B drafter forward pass latency
     "target_tpt": 105,  # ms; Qwen2.5-32B, latency of short prefill pass (~=tpt)
@@ -246,31 +269,18 @@ args.latency = {  # a6000, hf generate latencies
 #     "target_tpt": 52.6,  # ms; Qwen2.5-32B, latency of short prefill pass (~=tpt)
 # }
 
-args.overwrite = False
-args.drafter_threshold = 0.9
-args.dllm_dir = "/data2/ruipan/Fast_dLLM_v2_1.5B"
-args.max_new_tokens = 512
+
 
 # %%
-# draft_model_name = "Qwen/Qwen2.5-1.5B-Instruct"
 target_model_name = "Qwen/Qwen2.5-32B-Instruct"
 # target_model_name = "Qwen/Qwen2.5-7B-Instruct"  # for easier debugging
-# target_model_name = "Qwen/Qwen2.5-1.5B-Instruct"
-dllm_name = "Efficient-Large-Model/Fast_dLLM_v2_1.5B"
-
-# draft_model = AutoModelForCausalLM.from_pretrained(
-#     draft_model_name,
-#     torch_dtype="auto",
-#     device_map="auto"
-# )
-# draft_tokenizer = AutoTokenizer.from_pretrained(draft_model_name)
 target_model = AutoModelForCausalLM.from_pretrained(
     target_model_name,
     torch_dtype="auto",
     device_map="auto"
 )
 target_tokenizer = AutoTokenizer.from_pretrained(target_model_name)
-
+dllm_name = "Efficient-Large-Model/Fast_dLLM_v2_1.5B"
 dllm = AutoModelForCausalLM.from_pretrained(
     args.dllm_dir if args.dllm_dir is not None else dllm_name,
     torch_dtype="auto",
@@ -280,11 +290,18 @@ dllm = AutoModelForCausalLM.from_pretrained(
 # NOTE(ruipan): drafter and target should probably share the same tokenizer?
 # dllm_tokenizer = AutoTokenizer.from_pretrained(dllm_name, trust_remote_code=True)
 dllm_tokenizer = target_tokenizer
-
+if args.run_ar:
+    draft_model_name = "Qwen/Qwen2.5-1.5B-Instruct"
+    draft_model = AutoModelForCausalLM.from_pretrained(
+        draft_model_name,
+        torch_dtype="auto",
+        device_map="auto"
+    )
+    draft_tokenizer = target_tokenizer
 
 # %%
 for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
-    transformers.set_seed(42)  # reproducibility for each question
+    transformers.set_seed(42)  # reproducibility for each question-model-model config pairing
     problem, options = format_problem_and_options(args, problem_id)
     messages = [
         {"role": "user", "content": get_first_user_msg(problem, options)},
@@ -292,153 +309,167 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
     
     target_ids, orig_model_inputs = get_target_token_ids(target_model, target_tokenizer, messages, max_new_tokens=args.max_new_tokens)
     num_target_tokens = len(target_ids)
-    print(f"Target (vanilla) generation length: {num_target_tokens} tokens")
-
-    accepted_tokens = 0
-    rejected_tokens = 0
-    num_speculation_rounds = 0
-    total_num_forward_passes = 0
-    current_token_ids = []  # prefix tokens generated so far
-    pickled_data = {
-        "orig_model_inputs": orig_model_inputs,
-        "target_ids": target_ids,
-        "problem": problem,
-        "options": options,
-        "num_target_tokens": num_target_tokens,
-        "status_per_round": [],
-    }
-
-    if is_interactive():
-        inner_bar = tqdm(total=num_target_tokens, miniters=25, desc=f"Verification (Problem {problem_id})",
-                        position=1, leave=True, dynamic_ncols=False, file=sys.stdout)
-
-    while len(current_token_ids) < len(target_ids):
-        print(f"--- Speculation round {num_speculation_rounds} ---")
-        num_speculation_rounds += 1
-        
-        # A. PROPOSE: Get next n speculative tokens from draft model based on current accepted prefix
-        # draft_proposal = get_next_n_tokens(draft_model, orig_model_inputs, current_token_ids, n=n)
-        draft_proposal, num_forward_passes, forward_pass_latencies = get_next_n_tokens_dllm(dllm, orig_model_inputs, current_token_ids, 
-                                                veri_freq=args.veri_freq,  # number of speculative tokens proposed each time
-                                                output_seqlen=64,  # 2 blocks of 32. Ensures veri_freq tokens are generated in case they span over two blocks
-                                                small_block_size=8,
-                                                threshold=args.drafter_threshold,
-                                                is_drafter=True,)
-        total_num_forward_passes += num_forward_passes
-        # print(f"forward_pass_latencies {forward_pass_latencies}")  # NOTE(ruipan): seems to be similar to TPT of 1.5B AR model
-        
-        if not draft_proposal: # Stop if the draft model has nothing to say
-            print(f"{Colors.RED}Warning: Draft model returned no tokens{Colors.RESET}")
-            break
-        
-        if len(draft_proposal) < args.veri_freq:
-            print(f"{Colors.RED}Warning: Draft model returned fewer tokens ({len(draft_proposal)}) than veri_freq ({args.veri_freq})!{Colors.RESET}")
-            # break  # FIXME: is this sth we should guarantee?
-        
-        # B. Verify proposed tokens
-        prefix_len = len(current_token_ids)
-        combined_ids = current_token_ids + draft_proposal
-        
-        verify_input_tensor = torch.tensor([combined_ids], device=target_model.device)
-        full_input_ids = torch.cat([orig_model_inputs['input_ids'], verify_input_tensor], dim=1)
-
-        with torch.no_grad():
-            outputs = target_model(input_ids=full_input_ids)
-            
-            # The logits for the draft tokens start after the prompt and the accepted prefix.
-            # The logit at sequence position 't' is the prediction for the token at 't+1'.
-            # So we need the logits from the token *before* the first draft token up to the one *before* the last.
-            start_index = orig_model_inputs['input_ids'].shape[1] + prefix_len - 1
-            end_index = start_index + len(draft_proposal)
-            verify_logits = outputs.logits[0, start_index:end_index]
-            target_tokens = torch.argmax(verify_logits, dim=-1).tolist()
-            if len(target_tokens) < args.veri_freq:
-                print(f"{Colors.RED}Warning: target_tokens len ({len(target_tokens)}) is smaller than veri_freq ({args.veri_freq})!{Colors.RESET}")
-        
-        # C. ACCEPT/REJECT
-        accepted_len = 0
-        for i in range(len(draft_proposal)):
-            # The target's prediction for position `i` is the argmax of the logits at position `i`
-            target_pred = torch.argmax(verify_logits[i, :], dim=-1).item()
-            # print(f"  Verifying draft token at position {i}: {draft_proposal[i]}. Target would have picked {target_pred}.")
-
-            if draft_proposal[i] == target_pred:
-                accepted_len += 1
-            else:
-                # Mismatch found. The correct token is the target's prediction.
-                final_token = target_pred
-                break
-        else:
-            # All draft tokens were accepted. Get a "bonus" token from the final logit.
-            final_token_logits = outputs.logits[0, -1, :]
-            final_token = torch.argmax(final_token_logits, dim=-1).item()
-            # print(f"  All draft tokens accepted! Bonus token is {final_token}.")
-        
-        print(f"--- Speculation round {num_speculation_rounds}: acceptance rate {accepted_len / args.veri_freq} ({accepted_len}/{args.veri_freq}) ---")
-        
-        # D. UPDATE
-        tokens_to_append = draft_proposal[:accepted_len] + [final_token]
-        current_token_ids.extend(tokens_to_append)
-        
-        accepted_tokens += accepted_len
-        rejected_tokens += len(draft_proposal) - accepted_len
-        
-        info_this_round = {
-            "current_token_ids": current_token_ids,
-            "target_tokens": target_tokens,
-            "draft_proposal": draft_proposal,
-            "accepted_len": accepted_len,
-            "prefix_len": prefix_len,
+    logging.info(f"[Problem {problem_id}] Target (vanilla) generation length: {num_target_tokens} tokens")
+    
+    ar_drafter_speedup = None
+    for draft_type, drafter_threshold in args.drafter_configs:
+        transformers.set_seed(42)  # reproducibility for each question-model-model config pairing
+        logging.info(f"{Colors.BOLD}=== [Problem {problem_id}] Running drafter: {draft_type}_{drafter_threshold} ==={Colors.RESET}")
+        accepted_tokens = 0
+        rejected_tokens = 0
+        num_speculation_rounds = 0
+        total_num_forward_passes = 0
+        current_token_ids = []  # prefix tokens generated so far
+        pickled_data = {
+            "orig_model_inputs": orig_model_inputs,
+            "target_ids": target_ids,
+            "problem": problem,
+            "options": options,
+            "num_target_tokens": num_target_tokens,
+            "stats_per_round": [],
         }
-        pickled_data["status_per_round"].append(info_this_round)
-        
+
         if is_interactive():
-            inner_bar.update(len(tokens_to_append))
+            inner_bar = tqdm(total=num_target_tokens, miniters=25, desc=f"Verification (Problem {problem_id})",
+                            position=1, leave=True, dynamic_ncols=False, file=sys.stdout)
 
-        if target_tokenizer.eos_token_id in tokens_to_append:
-            break
+        while len(current_token_ids) < len(target_ids):
+            logging.debug(f"--- [{draft_type}_{drafter_threshold}] Speculation round {num_speculation_rounds} ---")
+            num_speculation_rounds += 1
+            
+            # A. PROPOSE: Get next n speculative tokens from draft model based on current accepted prefix
+            if draft_type == "ar":
+                draft_proposal = get_next_n_tokens_ar(draft_model, orig_model_inputs, current_token_ids, n=args.veri_freq)
+                num_forward_passes = args.veri_freq  # 1 fwd pass per token for AR drafter
+            elif draft_type == "dllm":
+                draft_proposal, num_forward_passes, forward_pass_latencies = get_next_n_tokens_dllm(dllm, orig_model_inputs, current_token_ids, 
+                                                        veri_freq=args.veri_freq,  # number of speculative tokens proposed each time
+                                                        output_seqlen=64,  # 2 blocks of 32. Ensures veri_freq tokens are generated in case they span over two blocks
+                                                        small_block_size=8,
+                                                        threshold=drafter_threshold,
+                                                        is_drafter=True,)
+            total_num_forward_passes += num_forward_passes
+            # print(f"forward_pass_latencies {forward_pass_latencies}")  # NOTE(ruipan): seems to be similar to TPT of 1.5B AR model
+            
+            if not draft_proposal: # Stop if the draft model has nothing to say
+                logging.info(f"{Colors.RED}Warning: Draft model returned no tokens{Colors.RESET}")
+                break
+            
+            if len(draft_proposal) < args.veri_freq:
+                logging.info(f"{Colors.RED}Warning: Draft model returned fewer tokens ({len(draft_proposal)}) than veri_freq ({args.veri_freq})!{Colors.RESET}")
+                # break
+            
+            # B. Verify proposed tokens
+            prefix_len = len(current_token_ids)
+            combined_ids = current_token_ids + draft_proposal
+            
+            verify_input_tensor = torch.tensor([combined_ids], device=target_model.device)
+            full_input_ids = torch.cat([orig_model_inputs['input_ids'], verify_input_tensor], dim=1)
 
-    if is_interactive():
-        inner_bar.close()
+            with torch.no_grad():
+                outputs = target_model(input_ids=full_input_ids)
+                
+                # The logits for the draft tokens start after the prompt and the accepted prefix.
+                # The logit at sequence position 't' is the prediction for the token at 't+1'.
+                # So we need the logits from the token *before* the first draft token up to the one *before* the last.
+                start_index = orig_model_inputs['input_ids'].shape[1] + prefix_len - 1
+                end_index = start_index + len(draft_proposal)
+                verify_logits = outputs.logits[0, start_index:end_index]
+                target_tokens = torch.argmax(verify_logits, dim=-1).tolist()
+            
+            # C. ACCEPT/REJECT
+            accepted_len = 0
+            for i in range(len(draft_proposal)):
+                # The target's prediction for position `i` is the argmax of the logits at position `i`
+                target_pred = torch.argmax(verify_logits[i, :], dim=-1).item()
+                # print(f"  Verifying draft token at position {i}: {draft_proposal[i]}. Target would have picked {target_pred}.")
 
-    # Compute token acceptance rate
-    drafted_tokens = num_speculation_rounds * args.veri_freq
-    acceptance_rate = accepted_tokens / drafted_tokens
-    print(f"\n{Colors.BOLD}--- [Problem {problem_id}] Statistics ---{Colors.RESET}")
-    print(f"{Colors.CYAN}[Problem {problem_id}] drafter_threshold: {args.drafter_threshold}{Colors.RESET}")
-    print(f"{Colors.CYAN}[Problem {problem_id}] acceptance rate: {acceptance_rate * 100:.1f}% ({accepted_tokens}/{drafted_tokens}) (total output tokens: {len(current_token_ids)}){Colors.RESET}")
-    print(f"{Colors.CYAN}[Problem {problem_id}] avg fwd passes/round: {total_num_forward_passes / num_speculation_rounds:.2f} ({total_num_forward_passes}/{num_speculation_rounds}){Colors.RESET}")
-    
-    # compute e2e latency speedup
-    latency_draft = total_num_forward_passes * args.latency["draft_fwd_pass"]  # ms
-    latency_target = num_speculation_rounds * args.latency["target_tpt"]
-    total_tpt = latency_draft + latency_target
-    avg_tpt = total_tpt / len(current_token_ids)
-    speedup = args.latency["target_tpt"] / avg_tpt
-    theoretical_speedup = calculate_spec_decoding_speedup(
-        alpha=0.605,  # offline-profiled acceptance rate of AR 1.5B drafter on MATH
-        gamma=args.veri_freq,
-        c=args.latency["draft_fwd_pass"] / args.latency["target_tpt"],
-    )
-    print(f"{Colors.CYAN}[Problem {problem_id}] Avg TPT of SD: {avg_tpt:.2f}ms (Speedup: {speedup:.2f}x; Drafter latency ratio {latency_draft / total_tpt * 100:.1f}%){Colors.RESET}")
-    print(f"{Colors.CYAN}[Problem {problem_id}] Theoretical speedup of vanilla SD: {theoretical_speedup:.2f}x. Win: {speedup / theoretical_speedup:.3f}x.{Colors.RESET}")
+                if draft_proposal[i] == target_pred:
+                    accepted_len += 1
+                else:
+                    # Mismatch found. The correct token is the target's prediction.
+                    final_token = target_pred
+                    break
+            else:
+                # All draft tokens were accepted. Get a "bonus" token from the final logit.
+                final_token_logits = outputs.logits[0, -1, :]
+                final_token = torch.argmax(final_token_logits, dim=-1).item()
+                # print(f"  All draft tokens accepted! Bonus token is {final_token}.")
+            
+            logging.debug(f"--- Speculation round {num_speculation_rounds}: acceptance rate {accepted_len / args.veri_freq} ({accepted_len}/{args.veri_freq}) ---")
+            
+            # D. UPDATE
+            tokens_to_append = draft_proposal[:accepted_len] + [final_token]
+            current_token_ids.extend(tokens_to_append)
+            
+            accepted_tokens += accepted_len
+            rejected_tokens += len(draft_proposal) - accepted_len
+            
+            info_this_round = {
+                "current_token_ids": current_token_ids,
+                "target_tokens": target_tokens,
+                "draft_proposal": draft_proposal,
+                "accepted_len": accepted_len,
+                "prefix_len": prefix_len,
+            }
+            pickled_data["stats_per_round"].append(info_this_round)
+            
+            if is_interactive():
+                inner_bar.update(len(tokens_to_append))
 
-    # export
-    status_per_round = pickled_data["status_per_round"]
-    if args.overwrite:
-        visualize_acc_rate_over_time(status_per_round, veri_freq=args.veri_freq, output_dir=args.output_dir_figures, problem_id=problem_id)
-    else:
-        visualize_acc_rate_over_time(status_per_round, veri_freq=args.veri_freq, output_dir=None, problem_id=None)
-    
-    pickled_data["num_speculation_rounds"] = num_speculation_rounds
-    pickled_data["total_num_forward_passes"] = total_num_forward_passes
-    pickled_data["accepted_tokens"] = accepted_tokens
-    pickled_data["rejected_tokens"] = rejected_tokens
-    
-    if args.overwrite or (not os.path.exists(os.path.join(args.output_dir_pickles, f"{problem_id}.pickle"))):
-        with open(os.path.join(args.output_dir_pickles, f"{problem_id}.pickle"), "wb") as f:
-            pickle.dump(pickled_data, f)
-        with open(os.path.join(args.output_dir_pickles, f"{problem_id}.txt"), "w") as f:
-            pprint.pprint(pickled_data, stream=f)
+            if target_tokenizer.eos_token_id in tokens_to_append:
+                break
+
+        if is_interactive():
+            inner_bar.close()
+
+        # Compute token acceptance rate
+        drafted_tokens = num_speculation_rounds * args.veri_freq
+        acceptance_rate = accepted_tokens / drafted_tokens
+        logging.info(f"{Colors.BOLD}--- [Problem {problem_id}, {draft_type}_{drafter_threshold}] Statistics ---{Colors.RESET}")
+        logging.info(f"{Colors.CYAN}[Problem {problem_id}, {draft_type}_{drafter_threshold}] drafter_threshold: {drafter_threshold}{Colors.RESET}")
+        logging.info(f"{Colors.CYAN}[Problem {problem_id}, {draft_type}_{drafter_threshold}] acceptance rate: {acceptance_rate * 100:.1f}% ({accepted_tokens}/{drafted_tokens}) (total output tokens: {len(current_token_ids)}){Colors.RESET}")
+        logging.info(f"{Colors.CYAN}[Problem {problem_id}, {draft_type}_{drafter_threshold}] avg fwd passes/round: {total_num_forward_passes / num_speculation_rounds:.2f} ({total_num_forward_passes}/{num_speculation_rounds}){Colors.RESET}")
+        
+        # compute e2e latency speedup
+        latency_draft = total_num_forward_passes * args.latency["draft_fwd_pass"]  # ms
+        latency_target = num_speculation_rounds * args.latency["target_tpt"]
+        total_tpt = latency_draft + latency_target
+        avg_tpt = total_tpt / len(current_token_ids)
+        speedup = args.latency["target_tpt"] / avg_tpt
+        logging.info(f"{Colors.CYAN}[Problem {problem_id}, {draft_type}_{drafter_threshold}] Speedup: {speedup:.2f}x (Drafter latency ratio {latency_draft / total_tpt * 100:.1f}%; Avg TPT of SD: {avg_tpt:.2f}ms){Colors.RESET}")
+        if draft_type == "ar" and ar_drafter_speedup is None:
+            ar_drafter_speedup = speedup
+        if ar_drafter_speedup is not None:
+            logging.info(f"{Colors.CYAN}[Problem {problem_id}, {draft_type}_{drafter_threshold}] Win over AR drafter: {speedup / ar_drafter_speedup:.3f}x.{Colors.RESET}")
+
+        # set up output dirs and export
+        if draft_type == "ar":
+            output_dir_figures = os.path.join(args.output_dir, "figures", "acc_rate_within_query", args.dataset_name, str(problem_id))
+            output_dir_pickles = os.path.join(args.output_dir, "pickles", "detailed_info", args.dataset_name, str(problem_id), "ar")
+        elif draft_type == "dllm":
+            output_dir_figures = os.path.join(args.output_dir, "figures", "acc_rate_within_query", args.dataset_name, str(problem_id))
+            output_dir_pickles = os.path.join(args.output_dir, "pickles", "detailed_info", args.dataset_name, str(problem_id), f"{draft_type}_{drafter_threshold}")
+
+        for d in [output_dir_figures, output_dir_pickles]:
+            os.makedirs(d, exist_ok=True)
+
+        stats_per_round = pickled_data["stats_per_round"]
+        if args.overwrite:
+            visualize_acc_rate_over_time(stats_per_round, veri_freq=args.veri_freq, output_dir=output_dir_figures, filename=f"{draft_type}_{drafter_threshold}")
+        else:
+            visualize_acc_rate_over_time(stats_per_round, veri_freq=args.veri_freq, output_dir=None, filename=None)
+        
+        pickled_data["num_speculation_rounds"] = num_speculation_rounds
+        pickled_data["total_num_forward_passes"] = total_num_forward_passes
+        pickled_data["accepted_tokens"] = accepted_tokens
+        pickled_data["rejected_tokens"] = rejected_tokens
+        
+        if args.overwrite or (not os.path.exists(os.path.join(output_dir_pickles, f"{draft_type}_{drafter_threshold}.pickle"))):
+            with open(os.path.join(output_dir_pickles, f"{draft_type}_{drafter_threshold}.pickle"), "wb") as f:
+                pickle.dump(pickled_data, f)
+            with open(os.path.join(output_dir_pickles, f"{draft_type}_{drafter_threshold}.txt"), "w") as f:
+                pp = pprint.PrettyPrinter(width=1000, stream=f)  # large enough to fit list
+                pp.pprint(pickled_data)
 
 # %%

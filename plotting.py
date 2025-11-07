@@ -5,9 +5,9 @@ import numpy as np
 import pandas as pd
 
 
-def get_boolean_decision_from_status_per_round(status_per_round, veri_freq):
+def get_boolean_decision_from_stats_per_round(stats_per_round, veri_freq):
     decisions = []
-    for round_id, round_info in enumerate(status_per_round):
+    for round_id, round_info in enumerate(stats_per_round):
         accepted_len = round_info["accepted_len"]
         
         # if round_id == 95:
@@ -25,7 +25,7 @@ def get_boolean_decision_from_status_per_round(status_per_round, veri_freq):
             decisions.extend([True] * accepted_len)
             decisions.append(False)  # first rejected token
         
-    last_round = status_per_round[-1]
+    last_round = stats_per_round[-1]
     last_round_prefix_len = last_round["prefix_len"]
     last_round_accepted_tokens = last_round["accepted_len"]
     if last_round["target_tokens"] == last_round["draft_proposal"]:
@@ -38,16 +38,16 @@ def get_boolean_decision_from_status_per_round(status_per_round, veri_freq):
     return decisions
 
 
-def visualize_acc_rate_over_time(status_per_round, veri_freq, figsize=(12, 3), output_dir=None, problem_id=None):
+def visualize_acc_rate_over_time(stats_per_round, veri_freq, figsize=(12, 3), output_dir=None, filename=None):
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, 
                                     gridspec_kw={'height_ratios': [1, 2]}, 
                                     sharex=True)
     
     # bottom: acceptance rate at each round
-    prefix_lens = [x["prefix_len"] + x["accepted_len"] for x in status_per_round]
-    acc_rates = [x["accepted_len"] / len(x["draft_proposal"]) for x in status_per_round]
-    veri_freq = len(status_per_round[0]["draft_proposal"])
-    decisions = get_boolean_decision_from_status_per_round(status_per_round, veri_freq)
+    prefix_lens = [x["prefix_len"] + x["accepted_len"] for x in stats_per_round]
+    acc_rates = [x["accepted_len"] / len(x["draft_proposal"]) for x in stats_per_round]
+    veri_freq = len(stats_per_round[0]["draft_proposal"])
+    decisions = get_boolean_decision_from_stats_per_round(stats_per_round, veri_freq)
     
     # print(f"prefix_lens: {prefix_lens}")
     # print(f"acc_rates: {acc_rates}")
@@ -70,6 +70,9 @@ def visualize_acc_rate_over_time(status_per_round, veri_freq, figsize=(12, 3), o
     
     plt.tight_layout()
     plt.show()
+    if output_dir is not None and filename is not None:
+        fig.savefig(os.path.join(output_dir, f"{filename}.png"))
+        plt.close(fig)
 
 
 def visualize_boolean_series(data, window=5, figsize=(10, 3), output_dir=None, problem_id=None):
