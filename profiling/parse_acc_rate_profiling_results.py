@@ -122,7 +122,8 @@ def print_table(data):
 
 # %%
 # filename = "/data2/ruipan/diffspec/logs/2025_11_07_01_12_aime.ansi"
-filename = "/data2/ruipan/diffspec/logs/2025_11_07_14_19_aime.ansi"
+# filename = "/data2/ruipan/diffspec/logs/2025_11_07_14_19_aime.ansi"
+filename = "/data2/ruipan/diffspec/logs/2025_11_10_22_38_aime.ansi"
 data = parse_log(filename)
 print_table(data)
 
