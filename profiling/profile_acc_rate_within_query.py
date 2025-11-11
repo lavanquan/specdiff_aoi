@@ -13,6 +13,8 @@ from tqdm import tqdm
 from openai import OpenAI
 from datasets import load_dataset, load_from_disk
 from transformers import AutoModelForCausalLM, AutoTokenizer
+
+# transformers.logging.set_verbosity_debug()
 # transformers.logging.set_verbosity_info()
 # transformers.logging.set_verbosity_warning()
 transformers.logging.set_verbosity_error()
@@ -172,7 +174,7 @@ def get_next_n_tokens_ar(model, orig_model_inputs, token_ids_so_far, n):
 
 
 
-def get_next_n_tokens_dllm(dllm, orig_model_inputs, token_ids_so_far, veri_freq, output_seqlen, small_block_size, threshold, is_drafter):
+def get_next_n_tokens_dllm(dllm, args, orig_model_inputs, token_ids_so_far, veri_freq, output_seqlen, small_block_size, threshold, is_drafter, prev_prefill_output=None):
     """Get the next n tokens from the model given the token IDs so far.
     """
     num_tokens_in_prompt = orig_model_inputs.input_ids.shape[1]
@@ -185,21 +187,40 @@ def get_next_n_tokens_dllm(dllm, orig_model_inputs, token_ids_so_far, veri_freq,
         'attention_mask': torch.cat([orig_model_inputs['attention_mask'], new_mask], dim=1)
     }
 
-    generated_ids, num_forward_passes, forward_pass_latencies = dllm.generate_draft_tokens(
-        # **new_model_inputs,
-        new_model_inputs["input_ids"],
-        max_new_tokens=output_seqlen,  # NOTE(ruipan): setting this to 8 will not lead to new tokens hmm
-        small_block_size=small_block_size,
-        threshold=threshold,
-        # use greedy decoding, not sampling
-        do_sample=False,
-        temperature=1.0,
-        top_p=1.0,
-        top_k=0.0,
-        # use_block_cache=True,  # NOTE(ruipan): doesn't seem to make a difference in latency...
-        is_drafter=is_drafter,
-        veri_freq=veri_freq,
-    )
+    if args.disable_reusing_drafter_kvs:
+        generated_ids, num_forward_passes, forward_pass_latencies = dllm.generate_draft_tokens(
+            # **new_model_inputs,
+            new_model_inputs["input_ids"],
+            max_new_tokens=output_seqlen,  # NOTE(ruipan): setting this to 8 will not lead to new tokens hmm
+            small_block_size=small_block_size,
+            threshold=threshold,
+            # use greedy decoding, not sampling
+            do_sample=False,
+            temperature=1.0,
+            top_p=1.0,
+            top_k=0.0,
+            # use_block_cache=True,  # NOTE(ruipan): doesn't seem to make a difference in latency...
+            is_drafter=is_drafter,
+            veri_freq=veri_freq,
+            return_prefill_kvs=False,
+        )
+    else:
+        generated_ids, prefill_output, num_forward_passes, forward_pass_latencies = dllm.generate_draft_tokens(
+            # **new_model_inputs,
+            new_model_inputs["input_ids"],
+            max_new_tokens=output_seqlen,  # NOTE(ruipan): setting this to 8 will not lead to new tokens hmm
+            small_block_size=small_block_size,
+            threshold=threshold,
+            # use greedy decoding, not sampling
+            do_sample=False,
+            temperature=1.0,
+            top_p=1.0,
+            top_k=0.0,
+            # use_block_cache=True,  # NOTE(ruipan): doesn't seem to make a difference in latency...
+            is_drafter=is_drafter,
+            veri_freq=veri_freq,
+            prev_prefill_output=prev_prefill_output,
+        )
     
     full_output_seqlen = generated_ids.shape[1]
     assert full_output_seqlen > num_tokens_in_prompt + len(token_ids_so_far), f"full_output_seqlen {full_output_seqlen}, num_tokens_in_prompt {num_tokens_in_prompt}, len(token_ids_so_far) {len(token_ids_so_far)}"
@@ -210,6 +231,8 @@ def get_next_n_tokens_dllm(dllm, orig_model_inputs, token_ids_so_far, veri_freq,
         special_token = "MASK" if 151665 in generated_ids else "STOP"
         logging.info(f"{Colors.RED}Generated ids contain {special_token} tokens! {generated_ids}{Colors.RESET}")
     
+    if not args.disable_reusing_drafter_kvs:
+        return generated_ids, prefill_output, num_forward_passes, forward_pass_latencies
     return generated_ids, num_forward_passes, forward_pass_latencies
 
 
@@ -239,23 +262,26 @@ parser.add_argument("--log_level",
                     help="Set the logging level")
 parser.add_argument('--run_ar', action='store_true', help='Run the AR drafter to compare speedups')
 parser.add_argument('--overwrite', action='store_true', help='Overwrite existing output pickles and figures')
+parser.add_argument('--disable_reusing_drafter_kvs', action='store_true', help='Disables reusing drafter KV cache across verification rounds')
 parser.add_argument('--read_pickle', action='store_true', help='Use acceptance decisions from a cached pickle file rather than rerunning')
 args, _ = parser.parse_known_args()
+
+
+######custom fields for easier debugging######
+args.log_level = "DEBUG"
+args.overwrite = False
+# args.run_ar = True
+# args.read_pickle = True
+# args.drafter_thresholds = [0.9, 0.7, 0.5, 0.3, 0.1, 0.01]
+args.drafter_thresholds = [0.01]
+args.dllm_dir = "/data2/ruipan/Fast_dLLM_v2_1.5B"
+######custom fields for easier debugging######
+
 logging.basicConfig(
     level=getattr(logging, args.log_level),
     format="[%(asctime)s %(levelname)s] %(message)s",
     datefmt="%m%d %H:%M:%S",
 )
-
-######custom fields for easier debugging######
-# args.overwrite = False
-# args.run_ar = True
-# args.read_pickle = True
-# args.drafter_thresholds = [0.9, 0.7, 0.5, 0.3, 0.1, 0.01]
-# # args.drafter_thresholds = [0.9]
-# args.dllm_dir = "/data2/ruipan/Fast_dLLM_v2_1.5B"
-######custom fields for easier debugging######
-
 args.drafter_configs = [("ar", None)] if args.run_ar else []
 args.drafter_configs.extend([("dllm", thr) for thr in args.drafter_thresholds])
 
@@ -345,6 +371,7 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
             num_speculation_rounds = 0
             total_num_forward_passes = 0
             current_token_ids = []  # prefix tokens generated so far
+            prev_prefill_output = None  # drafter's prefill KVs
             pickled_data = {
                 "orig_model_inputs": orig_model_inputs,
                 "target_ids": target_ids,
@@ -367,12 +394,22 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
                     draft_proposal = get_next_n_tokens_ar(draft_model, orig_model_inputs, current_token_ids, n=args.veri_freq)
                     num_forward_passes = args.veri_freq  # 1 fwd pass per token for AR drafter
                 elif draft_type == "dllm":
-                    draft_proposal, num_forward_passes, forward_pass_latencies = get_next_n_tokens_dllm(dllm, orig_model_inputs, current_token_ids, 
-                                                            veri_freq=args.veri_freq,  # number of speculative tokens proposed each time
-                                                            output_seqlen=64,  # 2 blocks of 32. Ensures veri_freq tokens are generated in case they span over two blocks
-                                                            small_block_size=8,
-                                                            threshold=drafter_threshold,
-                                                            is_drafter=True,)
+                    if args.disable_reusing_drafter_kvs:
+                        draft_proposal, num_forward_passes, forward_pass_latencies = get_next_n_tokens_dllm(dllm, args, orig_model_inputs, current_token_ids, 
+                                                                veri_freq=args.veri_freq,  # number of speculative tokens proposed each time
+                                                                output_seqlen=64,  # 2 blocks of 32. Ensures veri_freq tokens are generated in case they span over two blocks
+                                                                small_block_size=8,
+                                                                threshold=drafter_threshold,
+                                                                is_drafter=True,)
+                    else:
+                        draft_proposal, prefill_output, num_forward_passes, forward_pass_latencies = get_next_n_tokens_dllm(dllm, args, orig_model_inputs, current_token_ids, 
+                                                                veri_freq=args.veri_freq,  # number of speculative tokens proposed each time
+                                                                output_seqlen=64,  # 2 blocks of 32. Ensures veri_freq tokens are generated in case they span over two blocks
+                                                                small_block_size=8,
+                                                                threshold=drafter_threshold,
+                                                                is_drafter=True,
+                                                                prev_prefill_output=prev_prefill_output)
+                        prev_prefill_output = prefill_output
                 total_num_forward_passes += num_forward_passes
                 # print(f"forward_pass_latencies {forward_pass_latencies}")  # NOTE(ruipan): seems to be similar to TPT of 1.5B AR model
                 
