@@ -269,14 +269,14 @@ args, _ = parser.parse_known_args()
 
 
 ######custom fields for easier debugging######
-args.log_level = "DEBUG"
-args.overwrite = False
-# args.disable_reusing_drafter_kvs = True
-# args.run_ar = True
-# args.read_pickle = True
-# args.drafter_thresholds = [0.9, 0.7, 0.5, 0.3, 0.1, 0.01]
-args.drafter_thresholds = [0.01]
-args.dllm_dir = "/data2/ruipan/Fast_dLLM_v2_1.5B"
+# args.log_level = "DEBUG"
+# args.overwrite = False
+# # args.disable_reusing_drafter_kvs = True
+# # args.run_ar = True
+# # args.read_pickle = True
+# # args.drafter_thresholds = [0.9, 0.7, 0.5, 0.3, 0.1, 0.01]
+# args.drafter_thresholds = [0.01]
+# args.dllm_dir = "/data2/ruipan/Fast_dLLM_v2_1.5B"
 ######custom fields for easier debugging######
 
 logging.basicConfig(
@@ -383,10 +383,6 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
                 "num_target_tokens": num_target_tokens,
                 "stats_per_round": [],
             }
-            
-            # XXX debug
-            prev_prefill_output_list = []
-            
 
             if is_interactive():
                 inner_bar = tqdm(total=num_target_tokens, miniters=25, desc=f"Verification (Problem {problem_id})",
@@ -402,21 +398,12 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
                     num_forward_passes = args.veri_freq  # 1 fwd pass per token for AR drafter
                 elif draft_type == "dllm":
                     if args.disable_reusing_drafter_kvs:
-                        # draft_proposal, num_forward_passes, forward_pass_latencies = get_next_n_tokens_dllm(dllm, args, orig_model_inputs, current_token_ids, 
-                        #                                         veri_freq=args.veri_freq,  # number of speculative tokens proposed each time
-                        #                                         output_seqlen=64,  # 2 blocks of 32. Ensures veri_freq tokens are generated in case they span over two blocks
-                        #                                         small_block_size=8,
-                        #                                         threshold=drafter_threshold,
-                        #                                         is_drafter=True,)
-                        args.disable_reusing_drafter_kvs = False
-                        draft_proposal, prefill_output, num_forward_passes, forward_pass_latencies = get_next_n_tokens_dllm(dllm, args, orig_model_inputs, current_token_ids, 
+                        draft_proposal, num_forward_passes, forward_pass_latencies = get_next_n_tokens_dllm(dllm, args, orig_model_inputs, current_token_ids, 
                                                                 veri_freq=args.veri_freq,  # number of speculative tokens proposed each time
                                                                 output_seqlen=64,  # 2 blocks of 32. Ensures veri_freq tokens are generated in case they span over two blocks
                                                                 small_block_size=8,
                                                                 threshold=drafter_threshold,
                                                                 is_drafter=True,)
-                        args.disable_reusing_drafter_kvs = True
-                        prev_prefill_output_list.append(prefill_output)
                     else:
                         draft_proposal, prefill_output, num_forward_passes, forward_pass_latencies = get_next_n_tokens_dllm(dllm, args, orig_model_inputs, current_token_ids, 
                                                                 veri_freq=args.veri_freq,  # number of speculative tokens proposed each time
@@ -426,7 +413,6 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
                                                                 is_drafter=True,
                                                                 prev_prefill_output=prev_prefill_output)
                         prev_prefill_output = prefill_output
-                        prev_prefill_output_list.append(prev_prefill_output)
                 total_num_forward_passes += num_forward_passes
                 # print(f"forward_pass_latencies {forward_pass_latencies}")  # NOTE(ruipan): seems to be similar to TPT of 1.5B AR model
                 

@@ -55,6 +55,7 @@ for DATASET_NAME in "${DATASETS[@]}"; do
         --output_dir "${OUTPUT_DIR}" \
         --dllm_dir "${DLLM_DIR}" \
         --num_questions "${NUM_QUESTIONS}" \
+        --log_level INFO \
         --drafter_thresholds "${DRAFTER_THRESHOLDS[@]}" \
         --overwrite \
         --run_ar > "${OUTPUT_DIR}/logs/${timestamp}_${DATASET_NAME}.ansi" 2>&1
