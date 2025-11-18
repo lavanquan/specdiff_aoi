@@ -204,6 +204,7 @@ def get_next_n_tokens_dllm(dllm, args, orig_model_inputs, token_ids_so_far, veri
             is_drafter=is_drafter,
             veri_freq=veri_freq,
             return_prefill_kvs=False,
+            args=args,
         )
     else:
         generated_ids, prefill_output, num_forward_passes, forward_pass_latencies = dllm.generate_draft_tokens(
@@ -222,6 +223,7 @@ def get_next_n_tokens_dllm(dllm, args, orig_model_inputs, token_ids_so_far, veri
             veri_freq=veri_freq,
             return_prefill_kvs=True,
             prev_prefill_output=prev_prefill_output,
+            args=args,
         )
     
     full_output_seqlen = generated_ids.shape[1]
@@ -322,6 +324,7 @@ dllm = AutoModelForCausalLM.from_pretrained(
 # NOTE(ruipan): drafter and target should probably share the same tokenizer?
 # dllm_tokenizer = AutoTokenizer.from_pretrained(dllm_name, trust_remote_code=True)
 dllm_tokenizer = target_tokenizer
+args.target_tokenizer = target_tokenizer
 if args.run_ar:
     draft_model_name = "Qwen/Qwen2.5-1.5B-Instruct"
     draft_model = AutoModelForCausalLM.from_pretrained(
