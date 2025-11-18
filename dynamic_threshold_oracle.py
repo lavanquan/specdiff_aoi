@@ -141,9 +141,9 @@ def get_target_token_ids(model, tokenizer, messages, max_new_tokens):
         max_new_tokens=max_new_tokens,  # was 512 in vanilla sd experiments
         # use greedy decoding, not sampling
         do_sample=False,  # overrides all below sampling params, but setting them just in case
-        temperature=0.0,
-        top_p=1.0,
-        top_k=0.0,
+        # temperature=0.0,
+        # top_p=1.0,
+        # top_k=0.0,
     )
     generated_ids = [
         output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
@@ -169,9 +169,9 @@ def get_next_n_tokens_ar(model, orig_model_inputs, token_ids_so_far, n):
         max_new_tokens=n,
         # use greedy decoding, not sampling
         do_sample=False,
-        temperature=0.0,
-        top_p=1.0,
-        top_k=0.0,
+        # temperature=1.0,
+        # top_p=1.0,
+        # top_k=0.0,
     )
     generated_ids = generated_ids[0][len(new_model_inputs["input_ids"][0]):]
     
@@ -200,14 +200,14 @@ def get_next_n_tokens_dllm(dllm, args, orig_model_inputs, token_ids_so_far, veri
             small_block_size=small_block_size,
             threshold=threshold,
             # use greedy decoding, not sampling
-            do_sample=False,
-            temperature=1.0,
+            temperature=0.0,
             top_p=1.0,
             top_k=0.0,
             # use_block_cache=True,  # NOTE(ruipan): doesn't seem to make a difference in latency...
             is_drafter=is_drafter,
             veri_freq=veri_freq,
             return_prefill_kvs=False,
+            args=args,
         )
     else:
         generated_ids, prefill_output, num_forward_passes, forward_pass_latencies = dllm.generate_draft_tokens(
@@ -217,8 +217,7 @@ def get_next_n_tokens_dllm(dllm, args, orig_model_inputs, token_ids_so_far, veri
             small_block_size=small_block_size,
             threshold=threshold,
             # use greedy decoding, not sampling
-            do_sample=False,
-            temperature=1.0,
+            temperature=0.0,
             top_p=1.0,
             top_k=0.0,
             # use_block_cache=True,  # NOTE(ruipan): doesn't seem to make a difference in latency...
@@ -322,11 +321,12 @@ args, _ = parser.parse_known_args()
 args.log_level = "DEBUG"
 # args.overwrite = True
 # args.disable_reusing_drafter_kvs = True
-args.run_ar = False
+# args.run_ar = True
+# args.run_ar = False
 # args.read_pickle = True
 # args.drafter_thresholds = [0.9, 0.7, 0.5, 0.3, 0.1, 0.01]
 args.drafter_thresholds = [0.35]
-# args.max_new_tokens = 128
+# args.max_new_tokens = 64
 args.max_new_tokens = 512
 args.dllm_dir = "/data2/ruipan/Fast_dLLM_v2_1.5B"
 ######custom fields for easier debugging######
@@ -446,7 +446,7 @@ for problem_id in [12]:
 
             while len(current_token_ids) < len(target_ids):
                 logging.debug(f"--- [{draft_type}_{drafter_threshold}] Speculation round {num_speculation_rounds} ---")
-                num_speculation_rounds += 1
+                
                 current_token_ids_snapshot = copy.deepcopy(current_token_ids)
                 
                 # A. PROPOSE: Get next n speculative tokens from draft model based on current accepted prefix
@@ -482,7 +482,10 @@ for problem_id in [12]:
                         if prefill_output.logits.shape[1] != args.block_size:  # didn't prefill a new full block
                             prev_prefill_output = prefill_output
                         else:  # concatenate prev_prefill_output and prefill_output
-                            prev_prefill_output = join_outputs(prev_prefill_output, prefill_output)
+                            # prev_prefill_output = join_outputs(prev_prefill_output, prefill_output)
+                            # FIXME(ruipan): if some draft tokens are at the end of the block, and they were prefilled, the KVs would be contaminated with those draft tokens
+                            # workaround: temporarily disable this optimization for now
+                            prev_prefill_output = prefill_output
 
                 total_num_forward_passes += num_forward_passes
                 # print(f"forward_pass_latencies {forward_pass_latencies}")  # NOTE(ruipan): seems to be similar to TPT of 1.5B AR model
@@ -542,12 +545,17 @@ for problem_id in [12]:
                     proposed_tokens_str += args.target_tokenizer.decode([draft_proposal[i + accepted_len]])
                 proposed_tokens_str += f"{Colors.RESET}"
                 proposed_tokens_str += f"{Colors.GREEN}{args.target_tokenizer.decode([final_token])}{Colors.RESET}"
-                logging.debug(f"--- Speculation round {num_speculation_rounds} proposed token IDs {draft_proposal}, str: {proposed_tokens_str} ---")
+                if accepted_len != args.veri_freq:
+                    logging.debug(f"--- Speculation round {num_speculation_rounds} proposed token IDs {draft_proposal} ---")
+                else:
+                    logging.debug(f"--- Speculation round {num_speculation_rounds} proposed token IDs {draft_proposal}, bonus token {final_token} ---")
+                logging.debug(f"--- Speculation round {num_speculation_rounds} proposed str: {proposed_tokens_str} ---")
                 logging.debug(f"--- Speculation round {num_speculation_rounds}: acceptance rate {accepted_len / args.veri_freq} ({accepted_len}/{args.veri_freq}) ---")
                 
                 # D. UPDATE
                 tokens_to_append = draft_proposal[:accepted_len] + [final_token]
                 current_token_ids.extend(tokens_to_append)
+                logging.debug(f"current_token_ids len {len(current_token_ids)}")
                 
                 accepted_tokens += accepted_len
                 rejected_tokens += len(draft_proposal) - accepted_len
@@ -563,6 +571,8 @@ for problem_id in [12]:
                 
                 if is_interactive():
                     inner_bar.update(len(tokens_to_append))
+                
+                num_speculation_rounds += 1
 
                 if target_tokenizer.eos_token_id in tokens_to_append:
                     break

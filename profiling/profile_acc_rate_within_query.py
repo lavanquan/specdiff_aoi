@@ -137,9 +137,9 @@ def get_target_token_ids(model, tokenizer, messages, max_new_tokens):
         max_new_tokens=max_new_tokens,  # was 512 in vanilla sd experiments
         # use greedy decoding, not sampling
         do_sample=False,  # overrides all below sampling params, but setting them just in case
-        temperature=0.0,
-        top_p=1.0,
-        top_k=0.0,
+        # temperature=0.0,
+        # top_p=1.0,
+        # top_k=0.0,
     )
     generated_ids = [
         output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
@@ -165,9 +165,9 @@ def get_next_n_tokens_ar(model, orig_model_inputs, token_ids_so_far, n):
         max_new_tokens=n,
         # use greedy decoding, not sampling
         do_sample=False,
-        temperature=0.0,
-        top_p=1.0,
-        top_k=0.0,
+        # temperature=0.0,
+        # top_p=1.0,
+        # top_k=0.0,
     )
     generated_ids = generated_ids[0][len(new_model_inputs["input_ids"][0]):]
     
@@ -197,7 +197,7 @@ def get_next_n_tokens_dllm(dllm, args, orig_model_inputs, token_ids_so_far, veri
             threshold=threshold,
             # use greedy decoding, not sampling
             do_sample=False,
-            temperature=1.0,
+            temperature=0.0,
             top_p=1.0,
             top_k=0.0,
             # use_block_cache=True,  # NOTE(ruipan): doesn't seem to make a difference in latency...
@@ -214,7 +214,7 @@ def get_next_n_tokens_dllm(dllm, args, orig_model_inputs, token_ids_so_far, veri
             threshold=threshold,
             # use greedy decoding, not sampling
             do_sample=False,
-            temperature=1.0,
+            temperature=0.0,
             top_p=1.0,
             top_k=0.0,
             # use_block_cache=True,  # NOTE(ruipan): doesn't seem to make a difference in latency...
@@ -252,6 +252,8 @@ parser.add_argument("--num_questions", type=int, default=1,
                     help="Number of questions to run profiling on")
 parser.add_argument("--max_new_tokens", type=int, default=512,
                     help="Max new tokens from the target model")
+parser.add_argument("--block_size", type=int, default=32,
+                    help="Block size in Fast-dLLM")
 parser.add_argument("--veri_freq", type=int, default=5,
                     help="Frequency of verification steps (in number of tokens)")
 parser.add_argument("--drafter_thresholds", type=float, nargs="+",  # one or more float thresholds
@@ -403,14 +405,14 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
                     if args.disable_reusing_drafter_kvs:
                         draft_proposal, num_forward_passes, forward_pass_latencies = get_next_n_tokens_dllm(dllm, args, orig_model_inputs, current_token_ids, 
                                                                 veri_freq=args.veri_freq,  # number of speculative tokens proposed each time
-                                                                output_seqlen=64,  # 2 blocks of 32. Ensures veri_freq tokens are generated in case they span over two blocks
+                                                                output_seqlen=2*args.block_size,  # 2 blocks of 32. Ensures veri_freq tokens are generated in case they span over two blocks
                                                                 small_block_size=8,
                                                                 threshold=drafter_threshold,
                                                                 is_drafter=True,)
                     else:
                         draft_proposal, prefill_output, num_forward_passes, forward_pass_latencies = get_next_n_tokens_dllm(dllm, args, orig_model_inputs, current_token_ids, 
                                                                 veri_freq=args.veri_freq,  # number of speculative tokens proposed each time
-                                                                output_seqlen=64,  # 2 blocks of 32. Ensures veri_freq tokens are generated in case they span over two blocks
+                                                                output_seqlen=2*args.block_size,  # 2 blocks of 32. Ensures veri_freq tokens are generated in case they span over two blocks
                                                                 small_block_size=8,
                                                                 threshold=drafter_threshold,
                                                                 is_drafter=True,
