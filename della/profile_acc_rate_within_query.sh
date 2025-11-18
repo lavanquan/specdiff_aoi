@@ -41,7 +41,7 @@ conda activate vllm_dllm
 OUTPUT_DIR="${DATA_DIR}/diffspec"
 
 # # actual run
-DATASETS=("math" "aime")
+DATASETS=("math")  #  "aime"
 NUM_QUESTIONS=30
 # DRAFTER_THRESHOLDS=(0.9 0.7 0.5 0.3 0.1 0.01)
 DRAFTER_THRESHOLDS=(0.90 0.85 0.80 0.75 0.70 0.65 0.60 0.55 0.50 0.45 0.40 0.35 0.30 0.25 0.20 0.15 0.10 0.05)

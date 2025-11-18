@@ -2,6 +2,8 @@
 import torch
 import logging
 
+from transformers.cache_utils import DynamicCache
+
 class Colors:
     YELLOW = '\033[93m'
     CYAN = '\033[96m'
@@ -11,6 +13,39 @@ class Colors:
     BOLD = '\033[1m'
     STRIKETHROUGH = '\033[9m' # The code for a line across text
     RESET = '\033[0m'
+
+
+def merge_dynamic_caches(prev_cache, new_cache):
+    merged = DynamicCache()
+
+    num_layers = len(prev_cache.key_cache)
+    # print(f"num_layers {num_layers}")
+    for layer in range(num_layers):
+        k1 = prev_cache.key_cache[layer]     # [b, h, t1, d]
+        v1 = prev_cache.value_cache[layer]
+        k2 = new_cache.key_cache[layer]      # [b, h, t2, d]
+        v2 = new_cache.value_cache[layer]
+        # print(f"k1.shape {str(k1.shape)}, k2.shape {str(k2.shape)}")
+        merged_k = torch.cat([k1, k2], dim=2)
+        merged_v = torch.cat([v1, v2], dim=2)
+
+        merged.key_cache.append(merged_k)
+        merged.value_cache.append(merged_v)
+
+    return merged
+
+def join_outputs(output, output_to_append):
+    # 1. merge logits
+    output.logits = torch.cat([
+        output.logits, 
+        output_to_append.logits]
+    , dim=1)
+    # 2. merge KVs
+    output.past_key_values = merge_dynamic_caches(
+        output.past_key_values,
+        output_to_append.past_key_values,
+    )
+    return output
 
 def print_sd_trajectory(pickled_data, tokenizer):
     logging.info(f"{Colors.BOLD}--- Input ---{Colors.RESET}")
