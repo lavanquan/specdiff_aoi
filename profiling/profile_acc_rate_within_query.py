@@ -26,6 +26,7 @@ from plotting import (
 )
 from utils import (
     calculate_spec_decoding_speedup,
+    print_sd_trajectory,
 )
 
 class Colors:
@@ -35,6 +36,7 @@ class Colors:
     RED = '\033[91m'
     GREEN = '\033[92m'
     BOLD = '\033[1m'
+    STRIKETHROUGH = '\033[9m' # The code for a line across text
     RESET = '\033[0m'
 
 def is_interactive():
@@ -274,15 +276,19 @@ args, _ = parser.parse_known_args()
 
 
 ######custom fields for easier debugging######
-# # args.log_level = "DEBUG"
+# args.log_level = "DEBUG"
 # args.overwrite = False
 # # args.disable_reusing_drafter_kvs = True
 # # args.run_ar = True
-# # args.read_pickle = True
+# args.read_pickle = True  # TODO: read trajectory from pickle as well
 # # args.drafter_thresholds = [0.9, 0.7, 0.5, 0.3, 0.1, 0.01]
-# args.drafter_thresholds = [0.01]
-# args.dllm_dir = "/data2/ruipan/Fast_dLLM_v2_1.5B"
+args.drafter_thresholds = [0.9, 0.05]
+# args.drafter_thresholds = [0.05]
+args.dllm_dir = "/data2/ruipan/Fast_dLLM_v2_1.5B"
 ######custom fields for easier debugging######
+
+target_model_name = "Qwen/Qwen2.5-32B-Instruct"
+# target_model_name = "Qwen/Qwen2.5-7B-Instruct"  # for easier debugging
 
 logging.basicConfig(
     level=getattr(logging, args.log_level),
@@ -304,16 +310,15 @@ args.latency = {  # a6000, hf generate latencies
 # }
 
 
+target_tokenizer = AutoTokenizer.from_pretrained(target_model_name)
+args.target_tokenizer = target_tokenizer
 
 # %%
-target_model_name = "Qwen/Qwen2.5-32B-Instruct"
-# target_model_name = "Qwen/Qwen2.5-7B-Instruct"  # for easier debugging
 target_model = AutoModelForCausalLM.from_pretrained(
     target_model_name,
     torch_dtype="auto",
     device_map="auto"
 )
-target_tokenizer = AutoTokenizer.from_pretrained(target_model_name)
 dllm_name = "Efficient-Large-Model/Fast_dLLM_v2_1.5B"
 dllm = AutoModelForCausalLM.from_pretrained(
     args.dllm_dir if args.dllm_dir is not None else dllm_name,
@@ -324,7 +329,6 @@ dllm = AutoModelForCausalLM.from_pretrained(
 # NOTE(ruipan): drafter and target should probably share the same tokenizer?
 # dllm_tokenizer = AutoTokenizer.from_pretrained(dllm_name, trust_remote_code=True)
 dllm_tokenizer = target_tokenizer
-args.target_tokenizer = target_tokenizer
 if args.run_ar:
     draft_model_name = "Qwen/Qwen2.5-1.5B-Instruct"
     draft_model = AutoModelForCausalLM.from_pretrained(
@@ -335,8 +339,8 @@ if args.run_ar:
     draft_tokenizer = target_tokenizer
 
 # %%
-for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
-# for problem_id in [12]:
+# for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
+for problem_id in [12]:
     transformers.set_seed(42)  # reproducibility for each question-model-model config pairing
     problem, options = format_problem_and_options(args, problem_id)
     messages = [
@@ -469,6 +473,21 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
                     final_token = torch.argmax(final_token_logits, dim=-1).item()
                     # print(f"  All draft tokens accepted! Bonus token is {final_token}.")
                 
+                proposed_tokens_str = ""
+                for i in range(accepted_len):
+                    proposed_tokens_str += args.target_tokenizer.decode([draft_proposal[i]])
+                proposed_tokens_str += f"{Colors.RED}{Colors.STRIKETHROUGH}"
+                for i in range(args.veri_freq - accepted_len):
+                    if i + accepted_len >= len(draft_proposal):
+                        break
+                    proposed_tokens_str += args.target_tokenizer.decode([draft_proposal[i + accepted_len]])
+                proposed_tokens_str += f"{Colors.RESET}"
+                proposed_tokens_str += f"{Colors.GREEN}{args.target_tokenizer.decode([final_token])}{Colors.RESET}"
+                if accepted_len != args.veri_freq:
+                    logging.debug(f"--- Speculation round {num_speculation_rounds} proposed token IDs {draft_proposal} ---")
+                else:
+                    logging.debug(f"--- Speculation round {num_speculation_rounds} proposed token IDs {draft_proposal}, bonus token {final_token} ---")
+                logging.debug(f"--- Speculation round {num_speculation_rounds} proposed str: {proposed_tokens_str} ---")
                 logging.debug(f"--- Speculation round {num_speculation_rounds}: acceptance rate {accepted_len / args.veri_freq} ({accepted_len}/{args.veri_freq}) ---")
                 
                 # D. UPDATE
@@ -521,6 +540,8 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
             visualize_acc_rate_over_time(stats_per_round, veri_freq=args.veri_freq, acceptance_rate=acceptance_rate, output_dir=output_dir_figures, filename=f"{draft_type}_{drafter_threshold}")
         else:
             visualize_acc_rate_over_time(stats_per_round, veri_freq=args.veri_freq, acceptance_rate=acceptance_rate, output_dir=None, filename=None)
+        
+        print_sd_trajectory(pickled_data, target_tokenizer)
         
         pickled_data["num_speculation_rounds"] = num_speculation_rounds
         pickled_data["total_num_forward_passes"] = total_num_forward_passes

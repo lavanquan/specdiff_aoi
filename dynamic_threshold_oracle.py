@@ -279,10 +279,10 @@ def get_dynamic_threshold_v2(args, curr_seqlen, output_dir_pickles):
     drafting_tokens_decisions = decisions[curr_seqlen:curr_seqlen+args.veri_freq]
     avg_acc_rate = sum(drafting_tokens_decisions) / len(drafting_tokens_decisions)
     if avg_acc_rate >= 0.99:
-        t = 0.2
+        t = 0.05
         print(f"current seqlen {curr_seqlen}, avg_acc_rate {avg_acc_rate}, using {t}")
     else:
-        t = 0.35
+        t = 0.55
         print(f"current seqlen {curr_seqlen}, avg_acc_rate {avg_acc_rate}, using {t}")
     return t
 
@@ -318,14 +318,14 @@ args, _ = parser.parse_known_args()
 
 
 ######custom fields for easier debugging######
-args.log_level = "DEBUG"
+# args.log_level = "DEBUG"
 # args.overwrite = True
 # args.disable_reusing_drafter_kvs = True
 # args.run_ar = True
 # args.run_ar = False
 # args.read_pickle = True
 # args.drafter_thresholds = [0.9, 0.7, 0.5, 0.3, 0.1, 0.01]
-args.drafter_thresholds = [0.35]
+args.drafter_thresholds = [0.9, 0.05]
 # args.max_new_tokens = 64
 args.max_new_tokens = 512
 args.dllm_dir = "/data2/ruipan/Fast_dLLM_v2_1.5B"
@@ -338,8 +338,8 @@ logging.basicConfig(
     # datefmt="%m%d",
 )
 args.drafter_configs = [("ar", None)] if args.run_ar else []
-args.drafter_configs.extend([("dllm", thr) for thr in args.drafter_thresholds])
-# args.drafter_configs.extend([("dllm", "dt")])
+# args.drafter_configs.extend([("dllm", thr) for thr in args.drafter_thresholds])
+args.drafter_configs.extend([("dllm", "dt")])
 
 dataset = get_dataset(args.dataset_name)
 args.latency = {  # a6000, hf generate latencies
@@ -352,17 +352,18 @@ args.latency = {  # a6000, hf generate latencies
 # }
 
 
+target_model_name = "Qwen/Qwen2.5-32B-Instruct"
+# target_model_name = "Qwen/Qwen2.5-7B-Instruct"  # for easier debugging
+target_tokenizer = AutoTokenizer.from_pretrained(target_model_name)
+args.target_tokenizer = target_tokenizer
 
 
 # %%
-target_model_name = "Qwen/Qwen2.5-32B-Instruct"
-# target_model_name = "Qwen/Qwen2.5-7B-Instruct"  # for easier debugging
 target_model = AutoModelForCausalLM.from_pretrained(
     target_model_name,
     torch_dtype="auto",
     device_map="auto"
 )
-target_tokenizer = AutoTokenizer.from_pretrained(target_model_name)
 dllm_name = "Efficient-Large-Model/Fast_dLLM_v2_1.5B"
 dllm = AutoModelForCausalLM.from_pretrained(
     args.dllm_dir if args.dllm_dir is not None else dllm_name,
@@ -373,7 +374,6 @@ dllm = AutoModelForCausalLM.from_pretrained(
 # NOTE(ruipan): drafter and target should probably share the same tokenizer?
 # dllm_tokenizer = AutoTokenizer.from_pretrained(dllm_name, trust_remote_code=True)
 dllm_tokenizer = target_tokenizer
-args.target_tokenizer = target_tokenizer
 if args.run_ar:
     draft_model_name = "Qwen/Qwen2.5-1.5B-Instruct"
     draft_model = AutoModelForCausalLM.from_pretrained(
