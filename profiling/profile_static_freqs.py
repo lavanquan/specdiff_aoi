@@ -418,9 +418,8 @@ for problem_id in [12]:
                 
                 # A. PROPOSE: Get next n speculative tokens from draft model based on current accepted prefix
                 if draft_type == "ar":
-                    draft_proposal = get_next_n_tokens_ar(draft_model, orig_model_inputs, current_token_ids, n=args.veri_freq)
-                    num_forward_passes = args.veri_freq  # 1 fwd pass per token for AR drafter
-                    veri_freq = args.veri_freq
+                    draft_proposal = get_next_n_tokens_ar(draft_model, orig_model_inputs, current_token_ids, n=veri_freq)
+                    num_forward_passes = veri_freq  # 1 fwd pass per token for AR drafter
                 elif draft_type == "dllm":
                     logging.debug(f"--- [{draft_type}_{drafter_threshold}_{veri_freq}] Speculation round {num_speculation_rounds}, veri_freq {veri_freq} ---")
                     
@@ -557,9 +556,9 @@ for problem_id in [12]:
         # save and visualize results
         stats_per_round = pickled_data["stats_per_round"]
         if args.overwrite:
-            visualize_acc_rate_over_time(stats_per_round, veri_freq=args.veri_freq, acceptance_rate=acceptance_rate, output_dir=output_dir_figures, filename=f"{draft_type}_{drafter_threshold}")
+            visualize_acc_rate_over_time(stats_per_round, veri_freq=veri_freq, acceptance_rate=acceptance_rate, output_dir=output_dir_figures, filename=f"{draft_type}_{drafter_threshold}")
         else:
-            visualize_acc_rate_over_time(stats_per_round, veri_freq=args.veri_freq, acceptance_rate=acceptance_rate, output_dir=None, filename=None)
+            visualize_acc_rate_over_time(stats_per_round, veri_freq=veri_freq, acceptance_rate=acceptance_rate, output_dir=None, filename=None)
         
         print_sd_trajectory(pickled_data, target_tokenizer)
         
