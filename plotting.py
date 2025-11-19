@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 
-def get_boolean_decision_from_stats_per_round(stats_per_round, veri_freq):
+def get_boolean_decision_from_stats_per_round(stats_per_round, veri_freq=None):
     decisions = []
     for round_id, round_info in enumerate(stats_per_round):
         accepted_len = round_info["accepted_len"]
@@ -16,6 +16,8 @@ def get_boolean_decision_from_stats_per_round(stats_per_round, veri_freq):
         #     print(f"draft_proposal: {round_info["draft_proposal"]}")
         #     print(f"target_tokens: {round_info["target_tokens"]}")
         #     print(f"accepted_len: {round_info["accepted_len"]}")
+        
+        veri_freq = len(round_info["draft_proposal"])
         
         if accepted_len == veri_freq:
             # print(f"Round {round_id} accepted all tokens!")
@@ -46,7 +48,7 @@ def visualize_acc_rate_over_time(stats_per_round, veri_freq, acceptance_rate, fi
     # bottom: acceptance rate at each round
     prefix_lens = [x["prefix_len"] + x["accepted_len"] for x in stats_per_round]
     acc_rates = [x["accepted_len"] / len(x["draft_proposal"]) for x in stats_per_round]
-    veri_freq = len(stats_per_round[0]["draft_proposal"])
+    # veri_freq = len(stats_per_round[0]["draft_proposal"])
     decisions = get_boolean_decision_from_stats_per_round(stats_per_round, veri_freq)
     
     # print(f"prefix_lens: {prefix_lens}")

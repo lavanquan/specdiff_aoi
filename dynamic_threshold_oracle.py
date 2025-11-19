@@ -278,11 +278,11 @@ def get_dynamic_threshold_v2(args, curr_seqlen, output_dir_pickles):
     decisions = get_boolean_decision_from_stats_per_round(stats_per_round, args.veri_freq)
     drafting_tokens_decisions = decisions[curr_seqlen:curr_seqlen+args.veri_freq]
     avg_acc_rate = sum(drafting_tokens_decisions) / len(drafting_tokens_decisions)
-    if avg_acc_rate >= 0.99:
+    if avg_acc_rate >= 0.8:
         t = 0.05
         print(f"current seqlen {curr_seqlen}, avg_acc_rate {avg_acc_rate}, using {t}")
     else:
-        t = 0.55
+        t = 0.2
         print(f"current seqlen {curr_seqlen}, avg_acc_rate {avg_acc_rate}, using {t}")
     return t
 
@@ -319,13 +319,14 @@ args, _ = parser.parse_known_args()
 
 ######custom fields for easier debugging######
 # args.log_level = "DEBUG"
-# args.overwrite = True
+args.overwrite = True
+args.dataset_name = "aime"
 # args.disable_reusing_drafter_kvs = True
-# args.run_ar = True
+args.run_ar = True
 # args.run_ar = False
 # args.read_pickle = True
 # args.drafter_thresholds = [0.9, 0.7, 0.5, 0.3, 0.1, 0.01]
-args.drafter_thresholds = [0.9, 0.05]
+# args.drafter_thresholds = [0.9, 0.05]
 # args.max_new_tokens = 64
 args.max_new_tokens = 512
 args.dllm_dir = "/data2/ruipan/Fast_dLLM_v2_1.5B"
@@ -385,7 +386,7 @@ if args.run_ar:
 
 # %%
 # for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
-for problem_id in [12]:
+for problem_id in [11]:
     transformers.set_seed(42)  # reproducibility for each question-model-model config pairing
     problem, options = format_problem_and_options(args, problem_id)
     messages = [
