@@ -271,8 +271,10 @@ def get_dynamic_threshold_v1(args, curr_seqlen, output_dir_pickles):
 def get_dynamic_threshold_v2(args, curr_seqlen, output_dir_pickles):
     # if in a region where the acceptance rate is high, use a low threshold
     # otherwise, use a higher threshold
-    output_dir_pickles = '/'.join(output_dir_pickles.rsplit('/', 1)[:-1] + ['ar'])  # '/data2/ruipan/diffspec/pickles/detailed_info/math/12/dllm_0.01' -> '.../ar'
-    with open(os.path.join(output_dir_pickles, f"ar_None.pickle"), "rb") as f:
+    # output_dir_pickles = '/'.join(output_dir_pickles.rsplit('/', 1)[:-1] + ['ar'])  # '/data2/ruipan/diffspec/pickles/detailed_info/math/12/dllm_0.01' -> '.../ar'
+    # with open(os.path.join(output_dir_pickles, f"ar_None.pickle"), "rb") as f:
+    output_dir_pickles = '/'.join(output_dir_pickles.rsplit('/', 1)[:-1] + ['dllm_0.05'])  # '/data2/ruipan/diffspec/pickles/detailed_info/math/12/dllm_0.01' -> '.../ar'
+    with open(os.path.join(output_dir_pickles, f"dllm_0.05.pickle"), "rb") as f:
         ar_pickle = pickle.load(f)
     stats_per_round = ar_pickle["stats_per_round"]
     decisions = get_boolean_decision_from_stats_per_round(stats_per_round, args.veri_freq)
@@ -282,8 +284,30 @@ def get_dynamic_threshold_v2(args, curr_seqlen, output_dir_pickles):
         t = 0.05
         print(f"current seqlen {curr_seqlen}, avg_acc_rate {avg_acc_rate}, using {t}")
     else:
-        t = 0.2
+        t = 0.5
         print(f"current seqlen {curr_seqlen}, avg_acc_rate {avg_acc_rate}, using {t}")
+    return t
+
+
+def get_dynamic_threshold_v3(args, curr_seqlen, output_dir_pickles):
+    # assume we have the perfect knowledge of the acceptance decisions from dllm_0.05
+    # if we happen to be speculating in a region where dllm_0.05 also made a speculation from, check its acceptance decisions at that
+    # particular round. If low, use high threshold; if high, use low threshold
+    # otherwise, stick to the default.
+    output_dir_pickles = '/'.join(output_dir_pickles.rsplit('/', 1)[:-1] + ['dllm_0.05'])  # '/data2/ruipan/diffspec/pickles/detailed_info/math/12/dllm_0.01' -> '.../ar'
+    with open(os.path.join(output_dir_pickles, f"dllm_0.05.pickle"), "rb") as f:
+        ar_pickle = pickle.load(f)
+    stats_per_round = ar_pickle["stats_per_round"]
+    seqlen_at_speculation = [x["prefix_len"] for x in stats_per_round]
+    if curr_seqlen not in seqlen_at_speculation:
+        t = 0.05
+    else:
+        round_idx = seqlen_at_speculation.index(curr_seqlen)
+        acc_rate = ar_pickle["stats_per_round"][round_idx]["accepted_len"] / args.veri_freq
+        if acc_rate >= 0.6:
+            t = 0.05
+        else:
+            t = 0.99
     return t
 
 # %%
@@ -318,15 +342,15 @@ args, _ = parser.parse_known_args()
 
 
 ######custom fields for easier debugging######
-# args.log_level = "DEBUG"
-args.overwrite = True
-args.dataset_name = "aime"
+args.log_level = "DEBUG"
+# args.overwrite = True
+args.dataset_name = "math"
 # args.disable_reusing_drafter_kvs = True
-args.run_ar = True
+# args.run_ar = True
 # args.run_ar = False
 # args.read_pickle = True
 # args.drafter_thresholds = [0.9, 0.7, 0.5, 0.3, 0.1, 0.01]
-# args.drafter_thresholds = [0.9, 0.05]
+args.drafter_thresholds = [0.05]
 # args.max_new_tokens = 64
 args.max_new_tokens = 512
 args.dllm_dir = "/data2/ruipan/Fast_dLLM_v2_1.5B"
@@ -386,7 +410,7 @@ if args.run_ar:
 
 # %%
 # for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
-for problem_id in [11]:
+for problem_id in [12]:
     transformers.set_seed(42)  # reproducibility for each question-model-model config pairing
     problem, options = format_problem_and_options(args, problem_id)
     messages = [
@@ -440,6 +464,8 @@ for problem_id in [11]:
                 "num_target_tokens": num_target_tokens,
                 "stats_per_round": [],
             }
+            
+            high_threshold_seqlen = []  # if a speculation round used a high threshold, log the current seqlen
 
             if is_interactive():
                 inner_bar = tqdm(total=num_target_tokens, miniters=25, desc=f"Verification (Problem {problem_id})",
@@ -457,12 +483,15 @@ for problem_id in [11]:
                 elif draft_type == "dllm":
                     if drafter_threshold == "dt":
                         # drafter_threshold_this_round = get_dynamic_threshold_v1(
-                        drafter_threshold_this_round = get_dynamic_threshold_v2(
+                        # drafter_threshold_this_round = get_dynamic_threshold_v2(
+                        drafter_threshold_this_round = get_dynamic_threshold_v3(
                             args, 
                             curr_seqlen=len(current_token_ids),  # seqlen before any speculation happened
                             output_dir_pickles=output_dir_pickles,
                         )
                         logging.debug(f"--- Threshold {drafter_threshold_this_round} (current seqlen {len(current_token_ids)}) ---")
+                        if drafter_threshold_this_round == 0.99:
+                            high_threshold_seqlen.append(len(current_token_ids))
                     else:
                         drafter_threshold_this_round = drafter_threshold
                     if args.disable_reusing_drafter_kvs:
@@ -611,6 +640,11 @@ for problem_id in [11]:
         
         print_sd_trajectory(pickled_data, target_tokenizer)
         
+        # print the binary decision of each result token
+        decisions = get_boolean_decision_from_stats_per_round(stats_per_round, args.veri_freq)
+        for token_idx in range(len(current_token_ids)):
+            logging.debug(f"Token idx {token_idx}, token {target_tokenizer.decode([current_token_ids[token_idx]])}, accepted {decisions[token_idx]}")
+        
         pickled_data["num_speculation_rounds"] = num_speculation_rounds
         pickled_data["total_num_forward_passes"] = total_num_forward_passes
         pickled_data["accepted_tokens"] = accepted_tokens
@@ -625,4 +659,25 @@ for problem_id in [11]:
                 pp = pprint.PrettyPrinter(width=1000, stream=f)  # large enough to fit list
                 pp.pprint(pickled_data)
 
+# %%
+
+
+pickled_data_005 = copy.deepcopy(pickled_data)
+pickled_data_dt = copy.deepcopy(pickled_data)
+high_threshold_seqlen
+# %%
+improvements = []
+for (i, seqlen) in enumerate(high_threshold_seqlen):
+    round_idx_005 = [x["prefix_len"] for x in pickled_data_005["stats_per_round"]].index(seqlen)
+    round_idx_dt = [x["prefix_len"] for x in pickled_data_dt["stats_per_round"]].index(seqlen)
+    acc_rate_005 = pickled_data_005["stats_per_round"][round_idx_005]["accepted_len"] / args.veri_freq
+    acc_rate_dt = pickled_data_dt["stats_per_round"][round_idx_dt]["accepted_len"] / args.veri_freq
+    if acc_rate_005 == acc_rate_dt:
+        highlight_str = "no change"
+    else:
+        highlight_str = f"improvement: {acc_rate_dt - acc_rate_005:.1f}"
+        improvements.append(acc_rate_dt - acc_rate_005)
+    print(f"Seqlen {seqlen}, dllm_0.05 acc_rate {acc_rate_005}, dllm_dt acc_rate {acc_rate_dt}, {highlight_str}")
+print(f"Out of {len(high_threshold_seqlen)} high-threshold rounds, there are {len(improvements)} improvements.")
+print(f"average improvement: {sum(improvements) / len(improvements) if len(improvements) > 0 else 0:.3f}")
 # %%
