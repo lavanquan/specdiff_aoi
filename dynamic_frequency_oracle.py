@@ -288,7 +288,7 @@ args, _ = parser.parse_known_args()
 
 
 ######custom fields for easier debugging######
-args.log_level = "DEBUG"
+# args.log_level = "DEBUG"
 # args.overwrite = False
 # # args.disable_reusing_drafter_kvs = True
 args.run_ar = True
