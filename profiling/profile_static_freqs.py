@@ -352,8 +352,8 @@ if args.run_ar:
     draft_tokenizer = target_tokenizer
 
 # %%
-# for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
-for problem_id in [12]:
+for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
+# for problem_id in [12]:
     transformers.set_seed(42)  # reproducibility for each question-model-model config pairing
     problem, options = format_problem_and_options(args, problem_id)
     messages = [

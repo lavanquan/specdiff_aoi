@@ -42,8 +42,8 @@ OUTPUT_DIR="${DATA_DIR}/diffspec"
 
 # # actual run
 DATASETS=("math")  #  "aime"
-NUM_QUESTIONS=1  # not useful, as we really only profile question 12
-VERI_FREQS=(3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25)
+NUM_QUESTIONS=30  # not useful, as we really only profile question 12
+VERI_FREQS=(3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20)
 DRAFTER_THRESHOLDS=(0.05)
 # debug
 # DATASETS=("math")
