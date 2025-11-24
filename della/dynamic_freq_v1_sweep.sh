@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=profile_acc_rate_within_query_math              # Job name
+#SBATCH --job-name=dynamic_freq_v1_sweep_math              # Job name
 #SBATCH --output="/home/rp2773/slurm_logs/%A.out"       # Standard output log
 #SBATCH --error="/home/rp2773/slurm_logs/%A.err"         # Standard error log
 #SBATCH --ntasks=1                            # Number of tasks (1 process)
 #SBATCH --cpus-per-task=8                     # Number of CPU cores per task
 #SBATCH --gres=gpu:2                        # Number of GPUs to allocate
 ##SBATCH --constraint="gpu80"
-#SBATCH --time=4:00:00                        # Time limit (24 hours max)
+#SBATCH --time=8:00:00                        # Time limit (24 hours max)
 #SBATCH --mem=20G                            # Memory allocation (adjust as needed)
 #SBATCH --mail-user=ruipan@princeton.edu  # Your email
 #SBATCH --mail-type=ALL  # Options: BEGIN, END, FAIL, REQUEUE, TIME_LIMIT, etc.
@@ -15,8 +15,8 @@
 #SBATCH --partition=pli-lc
 #SBATCH --account=ravi-group
 
-CLUSTER="ravi"
-# CLUSTER="della"
+# CLUSTER="ravi"
+CLUSTER="della"
 
 # initialization: set environment variables based on the cluster
 if [ "$CLUSTER" = "ravi" ]; then
@@ -42,7 +42,7 @@ OUTPUT_DIR="${DATA_DIR}/diffspec"
 
 # # actual run
 DATASETS=("math")  #  "aime"
-NUM_QUESTIONS=30
+NUM_QUESTIONS=10
 DRAFTER_THRESHOLDS=(0.05)
 V1_MULTIPLICATIVE_FACTORS=(1.5 2.0 2.5 3.0 3.5)
 V1_LOWER_BOUND_FACTORS=(0.5 0.6 0.7 0.8 0.9 1.0)
@@ -50,7 +50,7 @@ V1_LOWER_BOUND_FACTORS=(0.5 0.6 0.7 0.8 0.9 1.0)
 timestamp=$(date +"%Y_%m_%d_%H_%M")  # equivalent of datetime.now().strftime("%Y_%m_%d_%H_%M") in python
 
 for DATASET_NAME in "${DATASETS[@]}"; do
-    python ../profile_acc_rate_within_query.py \
+    python ../dynamic_frequency_oracle.py \
         --dataset_name "${DATASET_NAME}" \
         --output_dir "${OUTPUT_DIR}" \
         --dllm_dir "${DLLM_DIR}" \
