@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=dynamic_freq_v1_sweep_math              # Job name
+#SBATCH --job-name=dynamic_freq_v1_sweep_aime              # Job name
 #SBATCH --output="/home/rp2773/slurm_logs/%A.out"       # Standard output log
 #SBATCH --error="/home/rp2773/slurm_logs/%A.err"         # Standard error log
 #SBATCH --ntasks=1                            # Number of tasks (1 process)
@@ -25,7 +25,7 @@ if [ "$CLUSTER" = "ravi" ]; then
     source /data2/ruipan/miniconda3/etc/profile.d/conda.sh
 elif [ "$CLUSTER" = "della" ]; then
     DATA_DIR="/scratch/gpfs/RAVIAN/rp2773/data"
-    DLLM_DIR="/hoome/rp2773/data/Fast_dLLM_v2_1.5B"
+    DLLM_DIR="/home/rp2773/data/Fast_dLLM_v2_1.5B"
     export HF_HOME="/scratch/gpfs/RAVIAN/rp2773/hf_cache"
     export HF_HUB_OFFLINE=1
     export HF_DATASETS_OFFLINE=1
@@ -41,7 +41,7 @@ conda activate vllm_dllm
 OUTPUT_DIR="${DATA_DIR}/diffspec"
 
 # # actual run
-DATASETS=("math")  #  "aime"
+DATASETS=("aime")  #  "aime"
 NUM_QUESTIONS=10
 DRAFTER_THRESHOLDS=(0.05)
 V1_MULTIPLICATIVE_FACTORS=(1.5 2.0 2.5 3.0 3.5)
