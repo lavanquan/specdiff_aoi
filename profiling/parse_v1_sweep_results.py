@@ -63,9 +63,13 @@ SF_NAME = "dllm_0.05_sf_None_None"
 def analyze(data):
     """Print per-problem summaries and compute averages."""
 
-    # Accumulate averages
+    # Accumulate averages for each config
     sums = defaultdict(float)
     counts = defaultdict(int)
+
+    # For oracle metric: best config per problem
+    oracle_best_spds = []
+    oracle_best_cfgs = {}
 
     print("=== Per-Problem Results ===")
     for pid in sorted(data.keys()):
@@ -78,53 +82,82 @@ def analyze(data):
             print(f"[Problem {pid}] Missing AR or SF config — skipping.")
             continue
 
-        # record sums
+        # record AR + SF sums
         sums[AR_NAME] += ar_spd
         counts[AR_NAME] += 1
 
         sums[SF_NAME] += sf_spd
         counts[SF_NAME] += 1
 
-        # find best among other 30 configs (exclude AR and SF)
-        best_name = None
-        best_spd = -1
+        # best OTHER config (exclude AR and SF)
+        best_other_name = None
+        best_other_spd = -1
+
+        # best OVERALL config (oracle)
+        best_overall_name = None
+        best_overall_spd = -1
 
         for name, (_, spd, _) in drafter_data.items():
             if spd is None:
                 continue
-            if name in (AR_NAME, SF_NAME):
-                continue
-            if spd > best_spd:
-                best_spd = spd
-                best_name = name
 
-            # accumulate averages
+            # global accumulation
             sums[name] += spd
             counts[name] += 1
 
-        diff = best_spd - sf_spd
+            # best *other* config (exclude AR + SF)
+            if name not in (AR_NAME, SF_NAME):
+                if spd > best_other_spd:
+                    best_other_spd = spd
+                    best_other_name = name
+
+            # best overall config (oracle)
+            if spd > best_overall_spd:
+                best_overall_spd = spd
+                best_overall_name = name
+
+        # record oracle for averaging later
+        oracle_best_spds.append(best_overall_spd)
+        oracle_best_cfgs[pid] = (best_overall_name, best_overall_spd)
+
+        diff = best_other_spd - sf_spd
 
         print(f"[Problem {pid}] AR speedup = {ar_spd:.3f}x")
         print(f"[Problem {pid}] SF (dllm_0.05_sf_None_None) speedup = {sf_spd:.3f}x")
-        print(f"[Problem {pid}] Best other config = {best_name} ({best_spd:.3f}x), win over SF = {diff:.3f}x\n")
+        print(f"[Problem {pid}] Best OTHER config = {best_other_name} ({best_other_spd:.3f}x), "
+              f"win over SF = {diff:.3f}x (absolute difference); relative win = {100 * (best_other_spd / sf_spd - 1):.2f}%")
+        print(f"[Problem {pid}] ORACLE best config = {best_overall_name} ({best_overall_spd:.3f}x)\n")
 
     # ------------------------------------------------------------------
     # Global averages
     # ------------------------------------------------------------------
     avg = {k: (sums[k] / counts[k]) for k in sums.keys() if counts[k] > 0}
 
-    # Best config overall
+    # Best config overall (single config best average)
     best_global_cfg = max(avg.items(), key=lambda x: x[1])
+
+    # Oracle average (best config per problem, varying)
+    oracle_avg = sum(oracle_best_spds) / len(oracle_best_spds) if oracle_best_spds else 0.0
 
     print("=== Global Averages (Across All Problems) ===")
     print(f"AR average speedup: {avg[AR_NAME]:.3f}x")
     print(f"SF (dllm_0.05_sf_None_None) average speedup: {avg[SF_NAME]:.3f}x")
-    print(f"Best average config overall: {best_global_cfg[0]} with {best_global_cfg[1]:.3f}x\n")
+    print(f"Best single global config: {best_global_cfg[0]} with {best_global_cfg[1]:.3f}x")
+    print(f"ORACLE average (best config per problem): {oracle_avg:.3f}x\n")
 
     return avg
+
+
 
 # %%
 # Example usage:
 # data = parse_log("/scratch/gpfs/RAVIAN/rp2773/data/diffspec/logs/2025_11_24_22_22_math.ansi")
-data = parse_log("/scratch/gpfs/RAVIAN/rp2773/data/diffspec/logs/2025_11_24_22_06_aime.ansi")
+# data = parse_log("/scratch/gpfs/RAVIAN/rp2773/data/diffspec/logs/2025_11_24_22_06_aime.ansi")
+
+# data = parse_log("/scratch/gpfs/RAVIAN/rp2773/data/diffspec/logs/2025_11_24_23_39_math.ansi")
+data = parse_log("/scratch/gpfs/RAVIAN/rp2773/data/diffspec/logs/2025_11_24_23_40_aime.ansi")
+
+
+
+
 analyze(data)

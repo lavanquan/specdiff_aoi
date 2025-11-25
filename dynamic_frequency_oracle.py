@@ -375,10 +375,10 @@ args.latency = {  # a6000, hf generate latencies
     "draft_fwd_pass": 28,  # ms; dLLM 1.5B drafter forward pass latency
     "target_tpt": 105,  # ms; Qwen2.5-32B, latency of short prefill pass (~=tpt)
 }
-# args.latency = {  # a6000, vllm latencies (assuming dllm latency is similar to 1.5b ar)
-#     "draft_fwd_pass": 6.1,  # ms; dLLM 1.5B drafter forward pass latency
-#     "target_tpt": 52.6,  # ms; Qwen2.5-32B, latency of short prefill pass (~=tpt)
-# }
+args.latency_vllm = {  # a6000, vllm latencies (assuming dllm latency is similar to 1.5b ar)
+    "draft_fwd_pass": 6.1,  # ms; dLLM 1.5B drafter forward pass latency
+    "target_tpt": 52.6,  # ms; Qwen2.5-32B, latency of short prefill pass (~=tpt)
+}
 
 
 target_tokenizer = AutoTokenizer.from_pretrained(args.target_model_name)
@@ -619,17 +619,26 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
         logging.info(f"{Colors.CYAN}[Problem {problem_id}, {drafter_name}] Acceptance rate: {acceptance_rate * 100:.1f}% ({accepted_tokens}/{drafted_tokens}){Colors.RESET}")
         
         # compute e2e latency speedup
+        logging.info(f"{Colors.CYAN}[Problem {problem_id}, {drafter_name}] Avg fwd passes/round: {total_num_forward_passes / num_speculation_rounds:.2f} ({total_num_forward_passes}/{num_speculation_rounds}) (total output tokens: {len(current_token_ids)}){Colors.RESET}")
+        
         latency_draft = total_num_forward_passes * args.latency["draft_fwd_pass"]  # ms
         latency_target = num_speculation_rounds * args.latency["target_tpt"]
         total_tpt = latency_draft + latency_target
         avg_tpt = total_tpt / len(current_token_ids)
         speedup = args.latency["target_tpt"] / avg_tpt
-        logging.info(f"{Colors.CYAN}[Problem {problem_id}, {drafter_name}] Speedup: {speedup:.2f}x (Drafter latency ratio {latency_draft / total_tpt * 100:.1f}%; Avg TPT of SD: {avg_tpt:.2f}ms){Colors.RESET}")
-        logging.info(f"{Colors.CYAN}[Problem {problem_id}, {drafter_name}] Avg fwd passes/round: {total_num_forward_passes / num_speculation_rounds:.2f} ({total_num_forward_passes}/{num_speculation_rounds}) (total output tokens: {len(current_token_ids)}){Colors.RESET}")
+        logging.info(f"{Colors.CYAN}[Problem {problem_id}, {drafter_name}] [HuggingFace] Speedup: {speedup:.2f}x (Drafter latency ratio {latency_draft / total_tpt * 100:.1f}%; Avg TPT of SD: {avg_tpt:.2f}ms){Colors.RESET}")
+        
         if draft_type == "ar" and ar_drafter_speedup is None:
             ar_drafter_speedup = speedup
         if ar_drafter_speedup is not None:
-            logging.info(f"{Colors.CYAN}[Problem {problem_id}, {drafter_name}] Win over AR drafter: {speedup / ar_drafter_speedup:.3f}x.{Colors.RESET}")
+            logging.info(f"{Colors.CYAN}[Problem {problem_id}, {drafter_name}] [HuggingFace] Win over AR drafter: {speedup / ar_drafter_speedup:.3f}x.{Colors.RESET}")
+        
+        latency_draft = total_num_forward_passes * args.latency_vllm["draft_fwd_pass"]  # ms
+        latency_target = num_speculation_rounds * args.latency_vllm["target_tpt"]
+        total_tpt = latency_draft + latency_target
+        avg_tpt = total_tpt / len(current_token_ids)
+        speedup = args.latency_vllm["target_tpt"] / avg_tpt
+        logging.info(f"{Colors.CYAN}[Problem {problem_id}, {drafter_name}] [vLLM] Speedup: {speedup:.2f}x (Drafter latency ratio {latency_draft / total_tpt * 100:.1f}%; Avg TPT of SD: {avg_tpt:.2f}ms){Colors.RESET}")
 
         # save and visualize results
         stats_per_round = pickled_data["stats_per_round"]
