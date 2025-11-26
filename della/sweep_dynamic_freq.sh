@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=sweep_dynamic_freq_math              # Job name
+#SBATCH --job-name=sweep_dynamic_freq_aime              # Job name
 #SBATCH --output="/home/rp2773/slurm_logs/%A.out"       # Standard output log
 #SBATCH --error="/home/rp2773/slurm_logs/%A.err"         # Standard error log
 #SBATCH --ntasks=1                            # Number of tasks (1 process)
 #SBATCH --cpus-per-task=8                     # Number of CPU cores per task
 #SBATCH --gres=gpu:2                        # Number of GPUs to allocate
 ##SBATCH --constraint="gpu80"
-#SBATCH --time=8:00:00                        # Time limit (24 hours max)
+#SBATCH --time=9:00:00                        # Time limit (24 hours max)
 #SBATCH --mem=20G                            # Memory allocation (adjust as needed)
 #SBATCH --mail-user=ruipan@princeton.edu  # Your email
 #SBATCH --mail-type=ALL  # Options: BEGIN, END, FAIL, REQUEUE, TIME_LIMIT, etc.
@@ -41,7 +41,7 @@ conda activate vllm_dllm
 OUTPUT_DIR="${DATA_DIR}/diffspec"
 
 # # actual run
-DATASETS=("math")  #  "aime"
+DATASETS=("aime")  #  "aime"
 NUM_QUESTIONS=30
 DRAFTER_THRESHOLDS=(0.05)
 SWEEP_CONF_THRESHOLD_FOR_LOWCONF_TOKENS=(0.2 0.25 0.3 0.35 0.4 0.45)  # 0.2, 0.25, 0.3, 0.35, 0.4, 0.45
