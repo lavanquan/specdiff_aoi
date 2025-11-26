@@ -314,7 +314,7 @@ def construct_drafter_configs(args):
     if args.run_ar:
         drafter_configs.extend([("ar", None, "sf")] )
     drafter_configs.extend([("dllm", thr, "sf") for thr in args.drafter_thresholds])
-    drafter_configs.extend([("dllm", thr, "df") for thr in args.drafter_thresholds])
+    # drafter_configs.extend([("dllm", thr, "df") for thr in args.drafter_thresholds])
     args.drafter_configs = drafter_configs
 
 def format_drafter_name(args, draft_type, drafter_threshold, freq_scheme):
@@ -378,7 +378,7 @@ args.log_level = "DEBUG"
 # # args.drafter_thresholds = [0.9, 0.7, 0.5, 0.3, 0.1, 0.01]
 # args.drafter_thresholds = [0.05]
 # args.drafter_thresholds = [0.05]
-args.target_model_name = "Qwen/Qwen2.5-7B-Instruct"  # for easier debugging
+# args.target_model_name = "Qwen/Qwen2.5-7B-Instruct"  # for easier debugging
 args.dllm_dir = "/data2/ruipan/Fast_dLLM_v2_1.5B"
 ######custom fields for easier debugging######
 
@@ -511,14 +511,14 @@ for problem_id in [12]:
                         if args.disable_reusing_drafter_kvs:
                             draft_proposal, num_forward_passes, forward_pass_latencies = get_next_n_tokens_dllm(dllm, args, orig_model_inputs, current_token_ids, 
                                                                     veri_freq=veri_freq,  # number of speculative tokens proposed each time
-                                                                    output_seqlen=2*args.block_size,  # 2 blocks of 32. Ensures veri_freq tokens are generated in case they span over two blocks
+                                                                    output_seqlen=3*args.block_size,  # 2 blocks of 32. Ensures veri_freq tokens are generated in case they span over two blocks
                                                                     small_block_size=8,
                                                                     threshold=drafter_threshold,
                                                                     is_drafter=True,)
                         else:
                             draft_proposal, prefill_output, num_forward_passes, forward_pass_latencies = get_next_n_tokens_dllm(dllm, args, orig_model_inputs, current_token_ids, 
                                                                     veri_freq=veri_freq,  # number of speculative tokens proposed each time
-                                                                    output_seqlen=2*args.block_size,  # 2 blocks of 32. Ensures veri_freq tokens are generated in case they span over two blocks
+                                                                    output_seqlen=3*args.block_size,  # 2 blocks of 32. Ensures veri_freq tokens are generated in case they span over two blocks
                                                                     small_block_size=8,
                                                                     threshold=drafter_threshold,
                                                                     is_drafter=True,
@@ -527,8 +527,8 @@ for problem_id in [12]:
                     else:  # dynamic frequency: drafter determines how many tokens to propose
                         # TODO
                         draft_proposal, spec_len, prefill_output, num_forward_passes, forward_pass_latencies = get_next_tokens_dllm(dllm, args, orig_model_inputs, current_token_ids, 
-                                                                    veri_freq=veri_freq,  # number of speculative tokens proposed each time
-                                                                    output_seqlen=2*args.block_size,  # 2 blocks of 32. Ensures veri_freq tokens are generated in case they span over two blocks
+                                                                    veri_freq=args.veri_freq,  # number of speculative tokens proposed each time
+                                                                    output_seqlen=3*args.block_size,  # 2 blocks of 32. Ensures veri_freq tokens are generated in case they span over two blocks
                                                                     small_block_size=8,
                                                                     threshold=drafter_threshold,
                                                                     is_drafter=True,
