@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=dynamic_freq_v1_sweep_aime              # Job name
+#SBATCH --job-name=sweep_dllm_drafter_freqs_0.9_math              # Job name
 #SBATCH --output="/home/rp2773/slurm_logs/%A.out"       # Standard output log
 #SBATCH --error="/home/rp2773/slurm_logs/%A.err"         # Standard error log
 #SBATCH --ntasks=1                            # Number of tasks (1 process)
 #SBATCH --cpus-per-task=8                     # Number of CPU cores per task
 #SBATCH --gres=gpu:2                        # Number of GPUs to allocate
 ##SBATCH --constraint="gpu80"
-#SBATCH --time=4:00:00                        # Time limit (24 hours max)
+#SBATCH --time=5:00:00                        # Time limit (24 hours max)
 #SBATCH --mem=20G                            # Memory allocation (adjust as needed)
 #SBATCH --mail-user=ruipan@princeton.edu  # Your email
 #SBATCH --mail-type=ALL  # Options: BEGIN, END, FAIL, REQUEUE, TIME_LIMIT, etc.
@@ -41,29 +41,32 @@ conda activate vllm_dllm
 OUTPUT_DIR="${DATA_DIR}/diffspec"
 
 # # actual run
-DATASETS=("aime")  #  "aime"
-NUM_QUESTIONS=30
-DRAFTER_THRESHOLDS=(0.05)
-V1_MULTIPLICATIVE_FACTORS=(1.6 1.8 2.0 2.2 2.4)
-V1_LOWER_BOUND_FACTORS=(0.4 0.5 0.6 0.7 0.8 0.9)
+DATASETS=("math")  #  "aime"
+NUM_QUESTIONS=30  # not useful, as we really only profile question 12
+# VERI_FREQS=(2 3 4 5 6 7 8 9 10 11 12 13)
+VERI_FREQS=(2 3 4 5 6 7 8 9 10)
+DRAFTER_THRESHOLDS=(0.9)
+# debug
+# DATASETS=("math")
+# NUM_QUESTIONS=1
+# DRAFTER_THRESHOLDS=(0.90 0.85 0.80 0.75 0.70 0.65 0.60 0.55 0.50 0.45 0.40 0.35 0.30 0.25 0.20 0.15 0.10 0.05)
 
 timestamp=$(date +"%Y_%m_%d_%H_%M")  # equivalent of datetime.now().strftime("%Y_%m_%d_%H_%M") in python
 
+echo "Timestamp: ${timestamp}"
+
 for DATASET_NAME in "${DATASETS[@]}"; do
-    python ../dynamic_frequency_oracle.py \
+    python ../profiling/sweep_dllm_drafter_freqs.py \
         --dataset_name "${DATASET_NAME}" \
         --output_dir "${OUTPUT_DIR}" \
         --dllm_dir "${DLLM_DIR}" \
         --num_questions "${NUM_QUESTIONS}" \
-        --veri_freq 10 \
-        --drafter_thresholds "${DRAFTER_THRESHOLDS[@]}" \
-        --df_policy_version 1 \
-        --v1_multiplicative_factors "${V1_MULTIPLICATIVE_FACTORS[@]}" \
-        --v1_lower_bound_factors "${V1_LOWER_BOUND_FACTORS[@]}" \
         --log_level INFO \
+        --drafter_thresholds "${DRAFTER_THRESHOLDS[@]}" \
+        --veri_freqs "${VERI_FREQS[@]}" \
+        --overwrite \
         --run_ar > "${OUTPUT_DIR}/logs/${timestamp}_${DATASET_NAME}.ansi" 2>&1
 done
-
         # --read_pickle \
-        # --overwrite \
+        # 
 

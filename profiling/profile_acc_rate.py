@@ -165,6 +165,8 @@ def get_next_n_tokens_dllm(dllm, orig_model_inputs, token_ids_so_far, n, output_
 parser = argparse.ArgumentParser(description="Profiles the acceptance rate of speculative decoding within a single query.")
 parser.add_argument("--dataset_name", type=str, choices=["aime", "math", "gpqa"], default="math",
                     help="Dataset")
+parser.add_argument("--model_type", type=str, choices=["ar", "dllm"], default="ar",
+                    help="Model type")
 parser.add_argument("--num_questions", type=int, default=1,
                     help="Number of questions to run profiling on")
 parser.add_argument("--target_len", type=int, default=512,
@@ -228,8 +230,12 @@ for problem_id in range(args.num_questions):
         num_speculation_rounds += 1
 
         # A. PROPOSE: Get next n speculative tokens from draft model based on current accepted prefix
-        # draft_proposal = get_next_n_tokens_ar(draft_model, orig_model_inputs, current_token_ids, n=n)
-        draft_proposal = get_next_n_tokens_dllm(dllm, orig_model_inputs, current_token_ids, n=n)
+        if args.model_type == "ar":
+            draft_proposal = get_next_n_tokens_ar(draft_model, orig_model_inputs, current_token_ids, n=n)
+        elif args.model_type == "dllm":
+            draft_proposal = get_next_n_tokens_dllm(dllm, orig_model_inputs, current_token_ids, n=n)
+        else:
+            raise NotImplementedError
         
         if not draft_proposal: # Stop if the draft model has nothing to say
             print(f"{Colors.RED}Warning: Draft model returned no tokens{Colors.RESET}")

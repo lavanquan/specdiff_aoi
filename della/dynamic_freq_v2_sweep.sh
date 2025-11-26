@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=dynamic_freq_v2_sweep_math              # Job name
+#SBATCH --job-name=dynamic_freq_v2_sweep_aime              # Job name
 #SBATCH --output="/home/rp2773/slurm_logs/%A.out"       # Standard output log
 #SBATCH --error="/home/rp2773/slurm_logs/%A.err"         # Standard error log
 #SBATCH --ntasks=1                            # Number of tasks (1 process)
@@ -41,11 +41,11 @@ conda activate vllm_dllm
 OUTPUT_DIR="${DATA_DIR}/diffspec"
 
 # # actual run
-DATASETS=("math")  #  "aime"
+DATASETS=("aime")  #  "aime"
 NUM_QUESTIONS=30
 DRAFTER_THRESHOLDS=(0.05)
-V1_MULTIPLICATIVE_FACTORS=(1.6 1.8 2.0 2.2)
-V1_LOWER_BOUND_FACTORS=(0.5 0.6 0.7 0.8)
+V1_MULTIPLICATIVE_FACTORS=(1.6 1.8 2.0)
+V1_LOWER_BOUND_FACTORS=(0.6 0.7 0.8)
 V2_LOWER_THRESHOLDS=(0.4 0.3 0.2 0.1)
 
 timestamp=$(date +"%Y_%m_%d_%H_%M")  # equivalent of datetime.now().strftime("%Y_%m_%d_%H_%M") in python
