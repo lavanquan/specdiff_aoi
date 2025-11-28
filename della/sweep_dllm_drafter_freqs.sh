@@ -56,6 +56,7 @@ for DATASET_NAME in "${DATASETS[@]}"; do
             --dllm_dir "${DLLM_DIR}" \
             --num_questions "${NUM_QUESTIONS}" \
             --spec_len "${FREQ}" \
+            --max_new_tokens 1024 \
             --drafter_thresholds "${DRAFTER_THRESHOLDS[@]}" \
             --log_level INFO \
             --run_dllm_sf \

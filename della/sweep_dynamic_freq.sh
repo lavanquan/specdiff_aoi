@@ -58,6 +58,7 @@ for DATASET_NAME in "${DATASETS[@]}"; do
         --dllm_dir "${DLLM_DIR}" \
         --num_questions "${NUM_QUESTIONS}" \
         --spec_len 10 \
+        --max_new_tokens 1024 \
         --drafter_thresholds "${DRAFTER_THRESHOLDS[@]}" \
         --sweep_lowconf_threshold "${SWEEP_lowconf_threshold[@]}" \
         --sweep_max_spec_len "${SWEEP_max_spec_len[@]}" \

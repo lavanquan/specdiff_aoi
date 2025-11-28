@@ -246,7 +246,7 @@ parser.add_argument("--dllm_dir", type=str, default="/data2/ruipan/Fast_dLLM_v2_
                     help="Dir to the dLLM weights and (modified) modeling.py")
 parser.add_argument("--num_questions", type=int, default=1,
                     help="Number of questions to run profiling on")
-parser.add_argument("--max_new_tokens", type=int, default=512,
+parser.add_argument("--max_new_tokens", type=int, default=1024,
                     help="Max new tokens from the target model")
 parser.add_argument("--block_size", type=int, default=32,
                     help="Block size in Fast-dLLM")

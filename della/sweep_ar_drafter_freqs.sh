@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=8                     # Number of CPU cores per task
 #SBATCH --gres=gpu:2                        # Number of GPUs to allocate
 ##SBATCH --constraint="gpu80"
-#SBATCH --time=10:00:00                        # Time limit (24 hours max)
+#SBATCH --time=4:00:00                        # Time limit (24 hours max)
 #SBATCH --mem=20G                            # Memory allocation (adjust as needed)
 #SBATCH --mail-user=ruipan@princeton.edu  # Your email
 #SBATCH --mail-type=ALL  # Options: BEGIN, END, FAIL, REQUEUE, TIME_LIMIT, etc.
@@ -43,7 +43,7 @@ OUTPUT_DIR="${DATA_DIR}/diffspec"
 DATASETS=("math")  #  "aime"
 NUM_QUESTIONS=30
 DRAFTER_THRESHOLDS=(0.05)
-VERI_FREQS=(2 3 4 5 6 7 8 9)
+VERI_FREQS=(3 4 5 6 7 8 9 10)
 
 timestamp=$(date +"%Y_%m_%d_%H_%M")  # equivalent of datetime.now().strftime("%Y_%m_%d_%H_%M") in python
 echo "Timestamp: ${timestamp}"
@@ -56,6 +56,7 @@ for DATASET_NAME in "${DATASETS[@]}"; do
             --dllm_dir "${DLLM_DIR}" \
             --num_questions "${NUM_QUESTIONS}" \
             --spec_len "${FREQ}" \
+            --max_new_tokens 1024 \
             --drafter_thresholds "${DRAFTER_THRESHOLDS[@]}" \
             --log_level INFO \
             --run_ar \

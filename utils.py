@@ -33,14 +33,14 @@ def is_interactive():
         pass
     return sys.stdout.isatty()
 
-def format_drafter_name(drafter_config):
+def format_drafter_name(args, drafter_config):
     draft_type, drafter_threshold, freq_scheme, lowconf_threshold, \
         max_spec_len, incr_len = drafter_config
     if draft_type == "ar":  # ar
-        return "ar_None_sf"
+        return f"ar_None_sf_{args.spec_len}"
     else:  # dllm
         if freq_scheme == "sf":  # Fast-dLLM, static frequency
-            return f"dllm_{drafter_threshold}_sf"
+            return f"dllm_{drafter_threshold}_sf_{args.spec_len}"
         elif freq_scheme == "df":  # FailFast
             if lowconf_threshold is None:
                 return f"dllm_{drafter_threshold}_df"  # obsolete
@@ -68,7 +68,7 @@ def get_output_dir(args, problem_id, drafter_config):
         args.target_model_name_clean,
         args.dataset_name, 
         str(problem_id),
-        format_drafter_name(drafter_config),
+        format_drafter_name(args, drafter_config),
     ) for x in ["pickles", "figures"]]
     for d in [output_dir_pickles, output_dir_figures]:
         os.makedirs(d, exist_ok=True)
