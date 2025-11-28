@@ -5,51 +5,42 @@ import numpy as np
 import pandas as pd
 
 
-def get_boolean_decision_from_stats_per_round(stats_per_round, veri_freq=None):
+def get_boolean_decision_from_stats_each_round(stats_each_round):
     decisions = []
-    for round_id, round_info in enumerate(stats_per_round):
+    for round_id, round_info in enumerate(stats_each_round):
         accepted_len = round_info["accepted_len"]
+
+        spec_len = len(round_info["~draft_proposal"])
         
-        # if round_id == 95:
-        #     print(f"current len(decisions): {len(decisions)}")
-        #     print(f"prefix_len: {round_info["prefix_len"]}")
-        #     print(f"draft_proposal: {round_info["draft_proposal"]}")
-        #     print(f"target_tokens: {round_info["target_tokens"]}")
-        #     print(f"accepted_len: {round_info["accepted_len"]}")
-        
-        veri_freq = len(round_info["draft_proposal"])
-        
-        if accepted_len == veri_freq:
+        if accepted_len == spec_len:
             # print(f"Round {round_id} accepted all tokens!")
-            decisions.extend([True] * (veri_freq + 1))  # all accepted plus one bonus token
+            decisions.extend([True] * (spec_len + 1))  # all accepted plus one bonus token
         else:
             # print(f"Round {round_id} accepted {accepted_len} tokens.")
             decisions.extend([True] * accepted_len)
             decisions.append(False)  # first rejected token
         
-    last_round = stats_per_round[-1]
-    last_round_prefix_len = last_round["prefix_len"]
-    last_round_accepted_tokens = last_round["accepted_len"]
-    if last_round["target_tokens"] == last_round["draft_proposal"]:
-        last_round_accepted_tokens += 1  # all accepted plus one bonus token
-    total_accepted_tokens = last_round_prefix_len + last_round_accepted_tokens
-    # assert len(decisions) == last_round_prefix_len + last_round_accepted_tokens, \
-    #     f"Decisions length {len(decisions)} does not match expected {last_round_prefix_len + last_round_accepted_tokens}!"
-    assert total_accepted_tokens <= len(decisions) <= total_accepted_tokens + 1, \
-        f"Decisions length {len(decisions)}, total_accepted_tokens {total_accepted_tokens}!"
+    # last_round = stats_each_round[-1]
+    # last_round_prefix_len = last_round["prefix_len"]
+    # last_round_accepted_tokens = last_round["accepted_len"]
+    # if last_round["target_tokens"] == last_round["~draft_proposal"]:
+    #     last_round_accepted_tokens += 1  # all accepted plus one bonus token
+    # total_accepted_tokens = last_round_prefix_len + last_round_accepted_tokens
+    # assert total_accepted_tokens <= len(decisions) <= total_accepted_tokens + 1, \
+    #     f"Decisions length {len(decisions)}, total_accepted_tokens {total_accepted_tokens}!"
     return decisions
 
 
-def visualize_acc_rate_over_time(stats_per_round, veri_freq, acceptance_rate, figsize=(12, 3), output_dir=None, filename=None):
+def visualize_acc_rate_over_time(stats_each_round, spec_len, acceptance_rate, figsize=(12, 3), output_dir=None, filename=None):
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, 
                                     gridspec_kw={'height_ratios': [1, 2]}, 
                                     sharex=True)
     
     # bottom: acceptance rate at each round
-    prefix_lens = [x["prefix_len"] + x["accepted_len"] for x in stats_per_round]
-    acc_rates = [x["accepted_len"] / len(x["draft_proposal"]) for x in stats_per_round]
-    # veri_freq = len(stats_per_round[0]["draft_proposal"])
-    decisions = get_boolean_decision_from_stats_per_round(stats_per_round, veri_freq)
+    prefix_lens = [x["prefix_len"] + x["accepted_len"] for x in stats_each_round]
+    acc_rates = [x["accepted_len"] / len(x["~draft_proposal"]) for x in stats_each_round]
+    # spec_len = len(stats_each_round[0]["~draft_proposal"])
+    decisions = get_boolean_decision_from_stats_each_round(stats_each_round)
     
     # print(f"prefix_lens: {prefix_lens}")
     # print(f"acc_rates: {acc_rates}")
@@ -61,7 +52,7 @@ def visualize_acc_rate_over_time(stats_per_round, veri_freq, acceptance_rate, fi
     ax2.set_ylabel("Acceptance Rate in that Round")
     ax2.grid(alpha=0.3)
     ax2.legend()
-    y_ticks = np.linspace(0, 1, veri_freq + 1)
+    y_ticks = np.linspace(0, 1, spec_len + 1)
     ax2.set_yticks(y_ticks)
     
     # top: raster plot

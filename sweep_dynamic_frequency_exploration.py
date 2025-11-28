@@ -4,15 +4,13 @@ import sys
 import copy
 import time
 import torch
-import openai
 import pickle
 import pprint
 import logging
 import argparse
 import transformers
 from tqdm import tqdm
-from openai import OpenAI
-from datasets import load_dataset, load_from_disk
+
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # transformers.logging.set_verbosity_debug()
@@ -23,106 +21,16 @@ transformers.logging.set_verbosity_error()
 sys.path.insert(1, os.path.dirname(os.getcwd()))
 from plotting import (
     visualize_acc_rate_over_time,
-    get_boolean_decision_from_stats_per_round,
 )
 from utils import (
-    calculate_spec_decoding_speedup,
+    Colors, is_interactive,
+    populate_dataset, get_first_user_msg, 
+    format_problem_and_options, format_drafter_name, get_proposal_str, get_output_tokens,
+    get_output_dir,
     print_sd_trajectory,
 )
 
-class Colors:
-    YELLOW = '\033[93m'
-    CYAN = '\033[96m'
-    MAGENTA = '\033[95m'
-    RED = '\033[91m'
-    GREEN = '\033[92m'
-    BOLD = '\033[1m'
-    STRIKETHROUGH = '\033[9m' # The code for a line across text
-    RESET = '\033[0m'
-
-def is_interactive():
-    """Return True if running in an interactive shell (Jupyter or terminal)."""
-    try:
-        from IPython import get_ipython
-        shell = get_ipython().__class__.__name__
-        if shell == "ZMQInteractiveShell":  # Jupyter/IPython
-            return True
-    except Exception:
-        pass
-    return sys.stdout.isatty()
-
-system_prompt = """
-Solve the following math problem efficiently and clearly. Please reason step by step, 
-separate logical reasoning steps with two newline characters (\n\n), and put your final answer within \\boxed{{}}.
-Problem: {problem}
-"""
-
-
-
 # %%
-def get_dataset(dataset_name):
-    if dataset_name == "aime":
-        dataset = load_dataset("HuggingFaceH4/aime_2024")["train"]
-    elif dataset_name == "math":
-        dataset = load_dataset("HuggingFaceH4/MATH-500")["test"]
-    elif dataset_name == "gpqa":
-        if os.getenv("HF_HUB_OFFLINE", "0") == "1":
-            dataset = load_from_disk("/scratch/gpfs/rp2773/hf_cache/datasets/gpqa")
-        else:    
-            dataset = load_dataset("Idavidrein/gpqa", "gpqa_diamond")["train"]
-    else:
-        raise NotImplementedError
-    return dataset
-
-def get_first_user_msg(problem, options=None):
-    if options is None:
-        system_prompt = """
-        Solve the following math problem efficiently and clearly. Please reason step by step, 
-        separate logical reasoning steps with two newline characters (\n\n), and put your final answer within \\boxed{{}}.
-        Problem: {problem}
-        """
-        return system_prompt.format(problem=problem)
-    else:
-        system_prompt = """
-        What is the correct answer to the following problem? Please reason step by step. 
-        Separate logical reasoning steps with two newline characters (\n\n).
-        Put the final answer **strictly** in the format \\boxed{{X}}, where X is a single letter (A, B, C, or D).
-
-        **Example output:** \\boxed{{A}}
-
-        Problem: {problem}.
-        Choices: 
-        (A) {ans_a}
-        (B) {ans_b}
-        (C) {ans_c}
-        (D) {ans_d}
-        """
-        return system_prompt.format(
-            problem=problem,
-            ans_a=options["A"],
-            ans_b=options["B"],
-            ans_c=options["C"],
-            ans_d=options["D"],
-        )
-
-def format_problem_and_options(args, problem_id):
-    if args.dataset_name == "aime":
-        problem = dataset["problem"][problem_id]
-        options = None
-    elif args.dataset_name == "math":
-        problem = dataset["problem"][problem_id]
-        options = None
-    elif args.dataset_name == "gpqa":
-        problem = dataset["Question"][problem_id]
-        options = {
-            "A": dataset["Correct Answer"][problem_id],
-            "B": dataset["Incorrect Answer 1"][problem_id],
-            "C": dataset["Incorrect Answer 2"][problem_id],
-            "D": dataset["Incorrect Answer 3"][problem_id],
-        }
-    return problem, options
-
-
 def get_target_token_ids(model, tokenizer, messages, max_new_tokens):
     """Get the target series of token IDs for the given messages.
     """
@@ -138,11 +46,8 @@ def get_target_token_ids(model, tokenizer, messages, max_new_tokens):
     generated_ids = model.generate(
         **model_inputs,
         max_new_tokens=max_new_tokens,  # was 512 in vanilla sd experiments
-        # use greedy decoding, not sampling
-        do_sample=False,  # overrides all below sampling params, but setting them just in case
-        # temperature=0.0,
-        # top_p=1.0,
-        # top_k=0.0,
+        do_sample=False,  # use greedy decoding, not sampling; overrides all below sampling params
+        # temperature=0.0, top_p=1.0, top_k=0.0,
     )
     generated_ids = [
         output_ids[len(input_ids):] for input_ids, output_ids in zip(model_inputs.input_ids, generated_ids)
@@ -166,11 +71,8 @@ def get_next_n_tokens_ar(model, orig_model_inputs, token_ids_so_far, n):
     generated_ids = model.generate(
         **new_model_inputs,
         max_new_tokens=n,
-        # use greedy decoding, not sampling
-        do_sample=False,
-        # temperature=0.0,
-        # top_p=1.0,
-        # top_k=0.0,
+        do_sample=False,  # use greedy decoding, not sampling; overrides all below sampling params
+        # temperature=0.0, top_p=1.0, top_k=0.0,
     )
     generated_ids = generated_ids[0][len(new_model_inputs["input_ids"][0]):]
     
@@ -178,7 +80,7 @@ def get_next_n_tokens_ar(model, orig_model_inputs, token_ids_so_far, n):
 
 
 
-def get_next_n_tokens_dllm(dllm, args, orig_model_inputs, token_ids_so_far, veri_freq, output_seqlen, small_block_size, threshold, is_drafter, prev_prefill_output=None):
+def get_next_n_tokens_dllm(dllm, args, orig_model_inputs, token_ids_so_far, spec_len, output_seqlen, small_block_size, threshold, is_drafter, prev_prefill_output=None):
     """Get the next n tokens from the model given the token IDs so far.
     """
     num_tokens_in_prompt = orig_model_inputs.input_ids.shape[1]
@@ -205,7 +107,7 @@ def get_next_n_tokens_dllm(dllm, args, orig_model_inputs, token_ids_so_far, veri
             top_k=0.0,
             # use_block_cache=True,  # NOTE(ruipan): doesn't seem to make a difference in latency...
             is_drafter=is_drafter,
-            veri_freq=veri_freq,
+            spec_len=spec_len,
             return_prefill_kvs=False,
             args=args,
         )
@@ -223,7 +125,7 @@ def get_next_n_tokens_dllm(dllm, args, orig_model_inputs, token_ids_so_far, veri
             top_k=0.0,
             # use_block_cache=True,  # NOTE(ruipan): doesn't seem to make a difference in latency...
             is_drafter=is_drafter,
-            veri_freq=veri_freq,
+            spec_len=spec_len,
             return_prefill_kvs=True,
             prev_prefill_output=prev_prefill_output,
             args=args,
@@ -232,7 +134,7 @@ def get_next_n_tokens_dllm(dllm, args, orig_model_inputs, token_ids_so_far, veri
     full_output_seqlen = generated_ids.shape[1]
     assert full_output_seqlen > num_tokens_in_prompt + len(token_ids_so_far), f"full_output_seqlen {full_output_seqlen}, num_tokens_in_prompt {num_tokens_in_prompt}, len(token_ids_so_far) {len(token_ids_so_far)}"
     generated_ids = generated_ids[0][len(new_model_inputs["input_ids"][0]):]
-    generated_ids = generated_ids.tolist()[:veri_freq]  # only take the next n tokens
+    generated_ids = generated_ids.tolist()[:spec_len]  # only take the next n tokens
     
     if any(x in generated_ids for x in [151665, 151645]):
         special_token = "MASK" if 151665 in generated_ids else "STOP"
@@ -243,10 +145,10 @@ def get_next_n_tokens_dllm(dllm, args, orig_model_inputs, token_ids_so_far, veri
     return generated_ids, num_forward_passes, forward_pass_latencies
 
 
-def get_next_tokens_dllm(dllm, args, orig_model_inputs, token_ids_so_far, veri_freq, output_seqlen, small_block_size, threshold, is_drafter, prev_prefill_output=None,
-                        conf_threshold_for_lowconf_tokens=None,
-                        num_tokens_upper_bound=None,
-                        num_tokens_to_increment=None,
+def get_next_tokens_dllm(dllm, args, orig_model_inputs, token_ids_so_far, spec_len, output_seqlen, small_block_size, threshold, is_drafter, prev_prefill_output=None,
+                        lowconf_threshold=None,
+                        max_spec_len=None,
+                        incr_len=None,
     ):
     """Get the next few tokens from the model given the token IDs so far.
     Difference is that the dLLM drafter itself determines how many tokens to output based on model internal signals.
@@ -262,10 +164,10 @@ def get_next_tokens_dllm(dllm, args, orig_model_inputs, token_ids_so_far, veri_f
     }
 
     if args.disable_reusing_drafter_kvs:
-        generated_ids, spec_len, num_forward_passes, forward_pass_latencies = dllm.generate_draft_tokens_arbitrary_length(
+        generated_ids, actual_spec_len, num_forward_passes, forward_pass_latencies = dllm.generate_draft_tokens_arbitrary_length(
             # **new_model_inputs,
             new_model_inputs["input_ids"],
-            max_new_tokens=output_seqlen,  # NOTE(ruipan): setting this to 8 will not lead to new tokens hmm
+            max_new_tokens=output_seqlen,
             small_block_size=small_block_size,
             threshold=threshold,
             # use greedy decoding, not sampling
@@ -275,15 +177,15 @@ def get_next_tokens_dllm(dllm, args, orig_model_inputs, token_ids_so_far, veri_f
             top_k=0.0,
             # use_block_cache=True,  # NOTE(ruipan): doesn't seem to make a difference in latency...
             is_drafter=is_drafter,
-            veri_freq=veri_freq,
+            spec_len=spec_len,
             return_prefill_kvs=False,
             args=args,
         )
     else:
-        generated_ids, spec_len, prefill_output, num_forward_passes, forward_pass_latencies = dllm.generate_draft_tokens_arbitrary_length(
+        generated_ids, actual_spec_len, prefill_output, num_forward_passes, forward_pass_latencies = dllm.generate_draft_tokens_arbitrary_length(
             # **new_model_inputs,
             new_model_inputs["input_ids"],
-            max_new_tokens=output_seqlen,  # NOTE(ruipan): setting this to 8 will not lead to new tokens hmm
+            max_new_tokens=output_seqlen,
             small_block_size=small_block_size,
             threshold=threshold,
             # use greedy decoding, not sampling
@@ -293,55 +195,43 @@ def get_next_tokens_dllm(dllm, args, orig_model_inputs, token_ids_so_far, veri_f
             top_k=0.0,
             # use_block_cache=True,  # NOTE(ruipan): doesn't seem to make a difference in latency...
             is_drafter=is_drafter,
-            veri_freq=veri_freq,
+            spec_len=spec_len,
             return_prefill_kvs=True,
             prev_prefill_output=prev_prefill_output,
             args=args,
-            conf_threshold_for_lowconf_tokens=conf_threshold_for_lowconf_tokens,
-            num_tokens_upper_bound=num_tokens_upper_bound,
-            num_tokens_to_increment=num_tokens_to_increment,
+            lowconf_threshold=lowconf_threshold,
+            max_spec_len=max_spec_len,
+            incr_len=incr_len,
         )
     
     full_output_seqlen = generated_ids.shape[1]
     assert full_output_seqlen > num_tokens_in_prompt + len(token_ids_so_far), f"full_output_seqlen {full_output_seqlen}, num_tokens_in_prompt {num_tokens_in_prompt}, len(token_ids_so_far) {len(token_ids_so_far)}"
     generated_ids = generated_ids[0][len(new_model_inputs["input_ids"][0]):]
-    generated_ids = generated_ids.tolist()[:spec_len]  # only take the next n tokens
+    generated_ids = generated_ids.tolist()[:actual_spec_len]  # only take the next n tokens
     
     if any(x in generated_ids for x in [151665, 151645]):
         special_token = "MASK" if 151665 in generated_ids else "STOP"
         logging.info(f"{Colors.RED}Generated ids contain {special_token} tokens! {generated_ids}{Colors.RESET}")
     
     if not args.disable_reusing_drafter_kvs:
-        return generated_ids, spec_len, prefill_output, num_forward_passes, forward_pass_latencies
-    return generated_ids, spec_len, num_forward_passes, forward_pass_latencies
+        return generated_ids, actual_spec_len, prefill_output, num_forward_passes, forward_pass_latencies
+    return generated_ids, actual_spec_len, num_forward_passes, forward_pass_latencies
 
 
 def construct_drafter_configs(args):
     drafter_configs = []
     if args.run_ar:
         drafter_configs.extend([("ar", None, "sf", None, None, None)] )
-    drafter_configs.extend([("dllm", thr, "sf", None, None, None) for thr in args.drafter_thresholds])
-    # drafter_configs.extend([("dllm", thr, "df") for thr in args.drafter_thresholds])
-    drafter_configs.extend([("dllm", thr, "df", conf_threshold_for_lowconf_tokens, num_tokens_upper_bound, num_tokens_to_increment) 
-                            for thr in args.drafter_thresholds
-                            for conf_threshold_for_lowconf_tokens in args.sweep_conf_threshold_for_lowconf_tokens
-                            for num_tokens_upper_bound in args.sweep_num_tokens_upper_bound
-                            for num_tokens_to_increment in args.sweep_num_tokens_to_increment
-                            ])
+    if args.run_dllm_sf:
+        drafter_configs.extend([("dllm", thr, "sf", None, None, None) for thr in args.drafter_thresholds])
+    if not args.baseline_sweep:
+        drafter_configs.extend([("dllm", thr, "df", lowconf_threshold, max_spec_len, incr_len) 
+                                for thr in args.drafter_thresholds
+                                for lowconf_threshold in args.sweep_lowconf_threshold
+                                for max_spec_len in args.sweep_max_spec_len
+                                for incr_len in args.sweep_incr_len
+                                ])
     args.drafter_configs = drafter_configs
-
-def format_drafter_name(args, draft_type, drafter_threshold, freq_scheme, conf_threshold_for_lowconf_tokens, num_tokens_upper_bound, num_tokens_to_increment):
-    if draft_type == "ar":
-        return "ar_None_sf"
-    
-    if freq_scheme == "sf":
-        return f"dllm_{drafter_threshold}_sf"
-    
-    if freq_scheme == "df":
-        if conf_threshold_for_lowconf_tokens is None:
-            return f"dllm_{drafter_threshold}_df"
-        else:
-            return f"dllm_{drafter_threshold}_df_{conf_threshold_for_lowconf_tokens}_{num_tokens_upper_bound}_{num_tokens_to_increment}"
 
 
 # %%
@@ -352,7 +242,7 @@ parser.add_argument("--output_dir", type=str, default="/data2/ruipan/diffspec",
                     help="Where result pickle files (and output figures) will be written to")
 parser.add_argument("--target_model_name", type=str, default="Qwen/Qwen2.5-32B-Instruct", 
                     help="Name of the base model to use")
-parser.add_argument("--dllm_dir", type=str, default=None, 
+parser.add_argument("--dllm_dir", type=str, default="/data2/ruipan/Fast_dLLM_v2_1.5B", 
                     help="Dir to the dLLM weights and (modified) modeling.py")
 parser.add_argument("--num_questions", type=int, default=1,
                     help="Number of questions to run profiling on")
@@ -360,7 +250,7 @@ parser.add_argument("--max_new_tokens", type=int, default=512,
                     help="Max new tokens from the target model")
 parser.add_argument("--block_size", type=int, default=32,
                     help="Block size in Fast-dLLM")
-parser.add_argument("--veri_freq", type=int, default=10,
+parser.add_argument("--spec_len", type=int, default=10,
                     help="Frequency of verification steps (in number of tokens)")
 parser.add_argument("--drafter_thresholds", type=float, nargs="+",  # one or more float thresholds
                     default=[0.05],
@@ -370,38 +260,36 @@ parser.add_argument("--log_level",
                     default="INFO",
                     choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
                     help="Set the logging level")
-parser.add_argument("--sweep_conf_threshold_for_lowconf_tokens", type=float, nargs="+",
-                    default=[0.2, 0.25, 0.3, 0.35, 0.4, 0.45],
+parser.add_argument("--sweep_lowconf_threshold", type=float, nargs="+",
+                    default=[0.4],
                     help="XXX")
-parser.add_argument("--sweep_num_tokens_upper_bound", type=int, nargs="+",
-                    default=[20, 25, 30],
+parser.add_argument("--sweep_max_spec_len", type=int, nargs="+",
+                    default=[50],
                     help="XXX")
-parser.add_argument("--sweep_num_tokens_to_increment", type=int, nargs="+",
-                    default=[5, 7, 10],
+parser.add_argument("--sweep_incr_len", type=int, nargs="+",
+                    default=[10],
                     help="XXX")
 parser.add_argument('--run_ar', action='store_true', help='Run the AR drafter to compare speedups')
+parser.add_argument('--run_dllm_sf', action='store_true', help='Run the dLLM drafter with static frequency (in param sweep for baselines)')
+parser.add_argument('--baseline_sweep', action='store_true', help='Running a baseline sweep, don\'t run dynamic frequency')
 parser.add_argument('--overwrite', action='store_true', help='Overwrite existing output pickles and figures')
 parser.add_argument('--disable_reusing_drafter_kvs', action='store_true', help='Disables reusing drafter KV cache across verification rounds')
 parser.add_argument('--read_pickle', action='store_true', help='Use acceptance decisions from a cached pickle file rather than rerunning')
 args, _ = parser.parse_known_args()
+args.target_model_name_clean = args.target_model_name.split("/", 1)[1]
 
 
 ######custom fields for easier debugging######
 # args.log_level = "DEBUG"
-# args.overwrite = False
-# # args.disable_reusing_drafter_kvs = True
+# args.overwrite = True
+# args.max_new_tokens = 1024
 # args.run_ar = True
-# args.num_questions = 5
-# args.veri_freq = 10
-# args.read_pickle = True  # TODO: read trajectory from pickle as well
-# # args.drafter_thresholds = [0.9, 0.7, 0.5, 0.3, 0.1, 0.01]
-# args.drafter_thresholds = [0.05]
-# args.drafter_thresholds = [0.05]
+# args.run_dllm_sf = True
+# args.read_pickle = True  # XXX: read trajectory from pickle as well in future debugging
 # args.target_model_name = "Qwen/Qwen2.5-7B-Instruct"  # for easier debugging
-# args.dllm_dir = "/data2/ruipan/Fast_dLLM_v2_1.5B"
-# args.sweep_conf_threshold_for_lowconf_tokens = [0.2, 0.3]
-# args.sweep_num_tokens_upper_bound = [20]
-# args.sweep_num_tokens_to_increment = [5]
+# args.sweep_lowconf_threshold = [0.4]
+# args.sweep_max_spec_len = [50]
+# args.sweep_incr_len = [10]
 ######custom fields for easier debugging######
 
 
@@ -413,15 +301,21 @@ logging.basicConfig(
 )
 
 construct_drafter_configs(args)  # populates args.drafter_configs
+populate_dataset(args)  # populates args.dataset
 
-dataset = get_dataset(args.dataset_name)
-args.latency = {  # a6000, hf generate latencies
-    "draft_fwd_pass": 28,  # ms; dLLM 1.5B drafter forward pass latency
-    "target_tpt": 105,  # ms; Qwen2.5-32B, latency of short prefill pass (~=tpt)
-}
-args.latency_vllm = {  # a6000, vllm latencies (assuming dllm latency is similar to 1.5b ar)
-    "draft_fwd_pass": 6.1,  # ms; dLLM 1.5B drafter forward pass latency
-    "target_tpt": 52.6,  # ms; Qwen2.5-32B, latency of short prefill pass (~=tpt)
+args.latency = {  # all in ms
+    "HuggingFace_A6000": {  # a6000, hf generate latencies
+        "draft_fwd_pass": 28,  # dLLM 1.5B drafter forward pass latency
+        "target_tpt": {
+            "Qwen2.5-32B-Instruct": 105,  # Qwen2.5-32B, latency of short prefill pass (~=tpt)
+        },
+    },
+    "vLLM_A6000": {
+        "draft_fwd_pass": 6.1,
+        "target_tpt": {
+            "Qwen2.5-32B-Instruct": 52.6,
+        },
+    },
 }
 
 
@@ -456,44 +350,46 @@ if args.run_ar:
 # %%
 for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
 # for problem_id in [12]:
-    transformers.set_seed(42)  # reproducibility for each question-model-model config pairing
+    transformers.set_seed(42)  # reproducibility for each question-model-model config pair
     problem, options = format_problem_and_options(args, problem_id)
     messages = [
         {"role": "user", "content": get_first_user_msg(problem, options)},
     ]
+    text = args.target_tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True
+    )
+    orig_model_inputs = target_tokenizer([text], return_tensors="pt").to(target_model.device)
+    num_target_tokens = args.max_new_tokens  # drafters will generate this many tokens
     
-    if not args.read_pickle:
-        target_ids, orig_model_inputs = get_target_token_ids(target_model, target_tokenizer, messages, max_new_tokens=args.max_new_tokens)
-        num_target_tokens = len(target_ids)
-        logging.info(f"[Problem {problem_id}] Target (vanilla) generation length: {num_target_tokens} tokens")
+    # if not args.read_pickle:
+    #     target_ids, orig_model_inputs = get_target_token_ids(target_model, target_tokenizer, messages, max_new_tokens=args.max_new_tokens)
+    #     num_target_tokens = len(target_ids)
+    #     logging.info(f"[Problem {problem_id}] Target (vanilla) generation length: {num_target_tokens} tokens")
     
-    ar_drafter_speedup = None
-    for draft_type, drafter_threshold, freq_scheme, conf_threshold_for_lowconf_tokens, num_tokens_upper_bound, num_tokens_to_increment in args.drafter_configs:
-        transformers.set_seed(42)  # reproducibility for each question-model-model config pairing
-        drafter_name = format_drafter_name(args, draft_type, drafter_threshold, freq_scheme, conf_threshold_for_lowconf_tokens, num_tokens_upper_bound, num_tokens_to_increment)
+    ar_drafter_speedup = {k: None for k in args.latency.keys()}
+    for drafter_config in args.drafter_configs:
+        transformers.set_seed(42)  # reproducibility for each question-model-model config pair
+        draft_type, drafter_threshold, freq_scheme, lowconf_threshold, max_spec_len, incr_len = drafter_config
+        drafter_name = format_drafter_name(drafter_config)
         
         # set up output dirs and export
-        if draft_type == "ar":
-            output_dir_figures = os.path.join(args.output_dir, "figures", "acc_rate_within_query", args.dataset_name, str(problem_id))
-            output_dir_pickles = os.path.join(args.output_dir, "pickles", "detailed_info", args.dataset_name, str(problem_id), "ar")
-        elif draft_type == "dllm":
-            output_dir_figures = os.path.join(args.output_dir, "figures", "acc_rate_within_query", args.dataset_name, str(problem_id))
-            output_dir_pickles = os.path.join(args.output_dir, "pickles", "detailed_info", args.dataset_name, str(problem_id), f"{drafter_name}")
-        for d in [output_dir_figures, output_dir_pickles]:
-            os.makedirs(d, exist_ok=True)
+        output_dir_pickles, output_dir_figures = get_output_dir(args, str(problem_id), drafter_config)
         
         if args.read_pickle:
-            if not os.path.exists(os.path.join(output_dir_pickles, f"{drafter_name}.pickle")):
-                logging.warning(f"{Colors.RED}No cached pickle found for {drafter_name}!{Colors.RESET}")
+            if not os.path.exists(os.path.join(output_dir_pickles, f"{args.max_new_tokens}.pickle")):
+                logging.warning(f"{Colors.RED}No cached pickle found for {drafter_name} (token budget {args.max_new_tokens})!{Colors.RESET}")
             
-            with open(os.path.join(output_dir_pickles, f"{drafter_name}.pickle"), "rb") as f:
+            with open(os.path.join(output_dir_pickles, f"{args.max_new_tokens}.pickle"), "rb") as f:
                 pickled_data = pickle.load(f)
             
             accepted_tokens = pickled_data["accepted_tokens"]
+            drafted_tokens = pickled_data["drafted_tokens"]
             rejected_tokens = pickled_data["rejected_tokens"]
             num_speculation_rounds = pickled_data["num_speculation_rounds"]
             total_num_forward_passes = pickled_data["total_num_forward_passes"]
-            current_token_ids = pickled_data["stats_per_round"][-1]["current_token_ids"]
+            current_token_ids = get_output_tokens(pickled_data["stats_each_round"])
         else:  # run the actual spec decoding pipeline
             logging.info(f"{Colors.BOLD}=== [Problem {problem_id}] Running drafter: {drafter_name} ==={Colors.RESET}")
             accepted_tokens = 0
@@ -503,81 +399,73 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
             current_token_ids = []  # prefix tokens generated so far
             prev_prefill_output = None  # drafter's prefill KVs
             pickled_data = {
-                "orig_model_inputs": orig_model_inputs,
-                "target_ids": target_ids,
+                "orig_model_inputs": orig_model_inputs["input_ids"][0].tolist(),
+                # "target_ids": target_ids,  # not necessarily equal to current_token_ids at the end due to numerical differences/different kernels during rounds of prefill
                 "problem": problem,
                 "options": options,
                 "num_target_tokens": num_target_tokens,
-                "stats_per_round": [],
+                "stats_each_round": [],
             }
 
             if is_interactive():
                 inner_bar = tqdm(total=num_target_tokens, miniters=25, desc=f"Verification (Problem {problem_id})",
                                 position=1, leave=True, dynamic_ncols=False, file=sys.stdout)
 
-            freq_so_far = []
-            acc_rate_so_far = []
-
-            while len(current_token_ids) < len(target_ids):
+            while len(current_token_ids) < num_target_tokens:
                 logging.debug(f"--- [{drafter_name}_{freq_scheme}] Speculation round {num_speculation_rounds} ---")
-                current_token_ids_snapshot = copy.deepcopy(current_token_ids)
                 
                 # A. PROPOSE: Get next n speculative tokens from draft model based on current accepted prefix
                 if draft_type == "ar":
-                    draft_proposal = get_next_n_tokens_ar(draft_model, orig_model_inputs, current_token_ids, n=args.veri_freq)
-                    num_forward_passes = args.veri_freq  # 1 fwd pass per token for AR drafter
-                    veri_freq = args.veri_freq
+                    draft_proposal = get_next_n_tokens_ar(draft_model, orig_model_inputs, current_token_ids, n=args.spec_len)
+                    num_forward_passes = args.spec_len  # 1 fwd pass per token for AR drafter
+                    spec_len = args.spec_len
                 elif draft_type == "dllm":
                     if freq_scheme == "sf":  # static frequency
-                        veri_freq = args.veri_freq
+                        spec_len = args.spec_len
                         if args.disable_reusing_drafter_kvs:
                             draft_proposal, num_forward_passes, forward_pass_latencies = get_next_n_tokens_dllm(dllm, args, orig_model_inputs, current_token_ids, 
-                                                                    veri_freq=veri_freq,  # number of speculative tokens proposed each time
-                                                                    output_seqlen=3*args.block_size,  # 2 blocks of 32. Ensures veri_freq tokens are generated in case they span over two blocks
+                                                                    spec_len=spec_len,  # number of speculative tokens proposed each time
+                                                                    output_seqlen=3*args.block_size,  # 2 blocks of 32. Ensures spec_len tokens are generated in case they span over two blocks
                                                                     small_block_size=8,
                                                                     threshold=drafter_threshold,
                                                                     is_drafter=True,)
                         else:
                             draft_proposal, prefill_output, num_forward_passes, forward_pass_latencies = get_next_n_tokens_dllm(dllm, args, orig_model_inputs, current_token_ids, 
-                                                                    veri_freq=veri_freq,  # number of speculative tokens proposed each time
-                                                                    output_seqlen=3*args.block_size,  # 2 blocks of 32. Ensures veri_freq tokens are generated in case they span over two blocks
+                                                                    spec_len=spec_len,  # number of speculative tokens proposed each time
+                                                                    output_seqlen=3*args.block_size,  # 2 blocks of 32. Ensures spec_len tokens are generated in case they span over two blocks
                                                                     small_block_size=8,
                                                                     threshold=drafter_threshold,
                                                                     is_drafter=True,
                                                                     prev_prefill_output=prev_prefill_output)
                             prev_prefill_output = prefill_output
                     else:  # dynamic frequency: drafter determines how many tokens to propose
-                        # TODO
-                        draft_proposal, spec_len, prefill_output, num_forward_passes, forward_pass_latencies = get_next_tokens_dllm(dllm, args, orig_model_inputs, current_token_ids, 
-                                                                    veri_freq=args.veri_freq,  # number of speculative tokens proposed each time
-                                                                    output_seqlen=3*args.block_size,  # 2 blocks of 32. Ensures veri_freq tokens are generated in case they span over two blocks
+                        draft_proposal, actual_spec_len, prefill_output, num_forward_passes, forward_pass_latencies = get_next_tokens_dllm(dllm, args, orig_model_inputs, current_token_ids, 
+                                                                    spec_len=args.spec_len,  # number of speculative tokens proposed each time
+                                                                    output_seqlen=3*args.block_size,  # 2 blocks of 32. Ensures spec_len tokens are generated in case they span over two blocks
                                                                     small_block_size=8,
                                                                     threshold=drafter_threshold,
                                                                     is_drafter=True,
                                                                     prev_prefill_output=prev_prefill_output,
-                                                                    conf_threshold_for_lowconf_tokens=conf_threshold_for_lowconf_tokens,
-                                                                    num_tokens_upper_bound=num_tokens_upper_bound,
-                                                                    num_tokens_to_increment=num_tokens_to_increment,
-                                                                    )
+                                                                    lowconf_threshold=lowconf_threshold,
+                                                                    max_spec_len=max_spec_len,
+                                                                    incr_len=incr_len)
                         prev_prefill_output = prefill_output
-                        veri_freq = spec_len  # update veri_freq to the actual number of tokens proposed
-                        
+                        spec_len = actual_spec_len  # update spec_len to the actual number of tokens proposed
                         
                 total_num_forward_passes += num_forward_passes
                 # print(f"forward_pass_latencies {forward_pass_latencies}")  # NOTE(ruipan): seems to be similar to TPT of 1.5B AR model
                 
                 if not draft_proposal: # Stop if the draft model has nothing to say
-                    logging.info(f"{Colors.RED}Warning: Draft model returned no tokens{Colors.RESET}")
+                    logging.info(f"{Colors.RED}[Round {num_speculation_rounds}] Warning: Draft model returned no tokens{Colors.RESET}")
                     break
                 
-                if len(draft_proposal) < veri_freq:
-                    logging.info(f"{Colors.RED}Warning: Draft model returned fewer tokens ({len(draft_proposal)}) than veri_freq ({veri_freq})!{Colors.RESET}")
+                if len(draft_proposal) < spec_len:
+                    logging.info(f"{Colors.RED}[Round {num_speculation_rounds}] Warning: Draft model returned fewer tokens ({len(draft_proposal)}) than spec_len ({spec_len})!{Colors.RESET}")
                     # break
                 
                 # B. Verify proposed tokens
                 prefix_len = len(current_token_ids)
                 combined_ids = current_token_ids + draft_proposal
-                
                 verify_input_tensor = torch.tensor([combined_ids], device=target_model.device)
                 full_input_ids = torch.cat([orig_model_inputs['input_ids'], verify_input_tensor], dim=1)
 
@@ -592,12 +480,21 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
                     verify_logits = outputs.logits[0, start_index:end_index]
                     target_tokens = torch.argmax(verify_logits, dim=-1).tolist()
                 
+                # # TODO: add stopping condition if drafter proposes EOS token?
+                # if draft_proposal and draft_proposal[-1] == target_tokenizer.eos_token_id:
+                #     logging.info(f"{Colors.YELLOW}Drafter proposed EOS token. Stopping speculation.{Colors.RESET}")
+                #     break
+                
                 # C. ACCEPT/REJECT
                 accepted_len = 0
+                bonus_token = None
                 for i in range(len(draft_proposal)):
                     # The target's prediction for position `i` is the argmax of the logits at position `i`
                     target_pred = torch.argmax(verify_logits[i, :], dim=-1).item()
                     # print(f"  Verifying draft token at position {i}: {draft_proposal[i]}. Target would have picked {target_pred}.")
+
+                    # if target_pred == target_tokenizer.eos_token_id:
+                    #     logging.info(f"{Colors.GREEN}Round {num_speculation_rounds} proposed EOS token at position {i}, draft_proposal {draft_proposal}.{Colors.RESET}")
 
                     if draft_proposal[i] == target_pred:
                         accepted_len += 1
@@ -609,27 +506,14 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
                     # All draft tokens were accepted. Get a "bonus" token from the final logit.
                     final_token_logits = outputs.logits[0, -1, :]
                     final_token = torch.argmax(final_token_logits, dim=-1).item()
+                    bonus_token = final_token
                     # print(f"  All draft tokens accepted! Bonus token is {final_token}.")
                 
-                proposed_tokens_str = ""
-                for i in range(accepted_len):
-                    proposed_tokens_str += args.target_tokenizer.decode([draft_proposal[i]])
-                proposed_tokens_str += f"{Colors.RED}{Colors.STRIKETHROUGH}"
-                for i in range(veri_freq - accepted_len):
-                    if i + accepted_len >= len(draft_proposal):
-                        break
-                    proposed_tokens_str += args.target_tokenizer.decode([draft_proposal[i + accepted_len]])
-                proposed_tokens_str += f"{Colors.RESET}"
-                proposed_tokens_str += f"{Colors.GREEN}{args.target_tokenizer.decode([final_token])}{Colors.RESET}"
-                if accepted_len != veri_freq:
-                    logging.debug(f"--- Speculation round {num_speculation_rounds} proposed token IDs {draft_proposal} ---")
-                else:
-                    logging.debug(f"--- Speculation round {num_speculation_rounds} proposed token IDs {draft_proposal}, bonus token {final_token} ---")
-                logging.debug(f"--- Speculation round {num_speculation_rounds} proposed str: {proposed_tokens_str} ---")
-                logging.debug(f"--- Speculation round {num_speculation_rounds}: acceptance rate {accepted_len / veri_freq:.2f} ({accepted_len}/{veri_freq}) ---")
+                proposal_str = get_proposal_str(args, spec_len, accepted_len, draft_proposal, final_token)
+                logging.debug(f"--- Speculation round {num_speculation_rounds} proposed token IDs {draft_proposal}, bonus token {bonus_token} ---")
+                logging.debug(f"--- Speculation round {num_speculation_rounds} proposed str: {proposal_str} ---")
+                logging.debug(f"--- Speculation round {num_speculation_rounds} acceptance rate {accepted_len / spec_len:.2f} ({accepted_len}/{spec_len}) ---")
                 logging.debug(f"--- Speculation round {num_speculation_rounds} num_forward_passes: {num_forward_passes} ---")
-                
-                acc_rate_so_far.append(accepted_len / veri_freq)
                 
                 # D. UPDATE
                 tokens_to_append = draft_proposal[:accepted_len] + [final_token]
@@ -639,14 +523,17 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
                 rejected_tokens += len(draft_proposal) - accepted_len
                 
                 info_this_round = {
-                    "current_token_ids": current_token_ids_snapshot,
-                    "target_tokens": target_tokens,
-                    "draft_proposal": draft_proposal,
-                    "accepted_len": accepted_len,
-                    "prefix_len": prefix_len,
-                    "veri_freq": veri_freq,
+                    "target_tokens": target_tokens,  # useful up until the first rejection/mismatch
+                    "prefix_len": prefix_len,  # number of decoded tokens before this round
+                    "spec_len": spec_len,  # number of speculated tokens
+                    "~draft_proposal": draft_proposal,  # list of speculated token IDs
+                    "accepted_len": accepted_len,  # number of accepted tokens
+                    "acceptance_rate": accepted_len / spec_len,  # acceptance rate this round
+                    "num_forward_passes": num_forward_passes,  # number of drafter fwd passes this round
+                    "final_token": final_token,  # the first corrected token or bonus token
+                    "bonus_token": bonus_token,
                 }
-                pickled_data["stats_per_round"].append(info_this_round)
+                pickled_data["stats_each_round"].append(info_this_round)
                 
                 num_speculation_rounds += 1
                 
@@ -660,52 +547,55 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
                 inner_bar.close()
 
         # Compute token acceptance rate
-        # drafted_tokens = num_speculation_rounds * args.veri_freq
-        drafted_tokens = sum([x["veri_freq"] for x in pickled_data["stats_per_round"]])
+        # drafted_tokens = num_speculation_rounds * args.spec_len
+        drafted_tokens = sum([x["spec_len"] for x in pickled_data["stats_each_round"]])
         acceptance_rate = accepted_tokens / drafted_tokens
+        avg_spec_len = sum([x["spec_len"] for x in pickled_data["stats_each_round"]]) / num_speculation_rounds
+        avg_acc_len = sum([x["accepted_len"] for x in pickled_data["stats_each_round"]]) / num_speculation_rounds
+        max_spec_len = max([x["spec_len"] for x in pickled_data["stats_each_round"]])
+        max_acc_len = max([x["accepted_len"] for x in pickled_data["stats_each_round"]])
+
         logging.info(f"{Colors.BOLD}--- [Problem {problem_id}, {drafter_name}] Statistics ---{Colors.RESET}")
         logging.info(f"{Colors.CYAN}[Problem {problem_id}, {drafter_name}] Acceptance rate: {acceptance_rate * 100:.1f}% ({accepted_tokens}/{drafted_tokens}){Colors.RESET}")
+        logging.info(f"{Colors.CYAN}[Problem {problem_id}, {drafter_name}] Accepted/speculated: avg {avg_acc_len:.2f}/{avg_spec_len:.2f}, max {max_acc_len}/{max_spec_len}{Colors.RESET}")  # could be from different rounds!
         
         # compute e2e latency speedup
-        logging.info(f"{Colors.CYAN}[Problem {problem_id}, {drafter_name}] Avg fwd passes/round: {total_num_forward_passes / num_speculation_rounds:.2f} ({total_num_forward_passes}/{num_speculation_rounds}) (total output tokens: {len(current_token_ids)}){Colors.RESET}")
-        
-        latency_draft = total_num_forward_passes * args.latency["draft_fwd_pass"]  # ms
-        latency_target = num_speculation_rounds * args.latency["target_tpt"]
-        total_tpt = latency_draft + latency_target
-        avg_tpt = total_tpt / len(current_token_ids)
-        speedup = args.latency["target_tpt"] / avg_tpt
-        logging.info(f"{Colors.CYAN}[Problem {problem_id}, {drafter_name}] [HuggingFace] Speedup: {speedup:.2f}x (Drafter latency ratio {latency_draft / total_tpt * 100:.1f}%; Avg TPT of SD: {avg_tpt:.2f}ms){Colors.RESET}")
-        
-        if draft_type == "ar" and ar_drafter_speedup is None:
-            ar_drafter_speedup = speedup
-        if ar_drafter_speedup is not None:
-            logging.info(f"{Colors.CYAN}[Problem {problem_id}, {drafter_name}] [HuggingFace] Win over AR drafter: {speedup / ar_drafter_speedup:.3f}x.{Colors.RESET}")
-        
-        latency_draft = total_num_forward_passes * args.latency_vllm["draft_fwd_pass"]  # ms
-        latency_target = num_speculation_rounds * args.latency_vllm["target_tpt"]
-        total_tpt = latency_draft + latency_target
-        avg_tpt = total_tpt / len(current_token_ids)
-        speedup = args.latency_vllm["target_tpt"] / avg_tpt
-        logging.info(f"{Colors.CYAN}[Problem {problem_id}, {drafter_name}] [vLLM] Speedup: {speedup:.2f}x (Drafter latency ratio {latency_draft / total_tpt * 100:.1f}%; Avg TPT of SD: {avg_tpt:.2f}ms){Colors.RESET}")
+        total_output_tokens = len(current_token_ids)
+        logging.info(f"{Colors.CYAN}[Problem {problem_id}, {drafter_name}] Avg fwd passes/round: {total_num_forward_passes / num_speculation_rounds:.2f} ({total_num_forward_passes}/{num_speculation_rounds}) (total output tokens: {total_output_tokens}){Colors.RESET}")
+        for hardware in args.latency.keys():
+            latency_draft = total_num_forward_passes * args.latency[hardware]["draft_fwd_pass"]  # ms
+            latency_target = num_speculation_rounds * args.latency[hardware]["target_tpt"][args.target_model_name_clean]
+            total_tpt = latency_draft + latency_target
+            avg_tpt = total_tpt / total_output_tokens
+            speedup = args.latency[hardware]["target_tpt"][args.target_model_name_clean] / avg_tpt
+            logging.info(f"{Colors.CYAN}[Problem {problem_id}, {drafter_name}] [{hardware}] Speedup: {speedup:.2f}x (Drafter ratio {latency_draft / total_tpt * 100:.1f}% ({latency_draft:.1f}ms/{total_tpt:.1f}ms); Avg TPT of SD: {avg_tpt:.2f}ms){Colors.RESET}")
+            
+            if draft_type == "ar" and ar_drafter_speedup[hardware] is None:
+                ar_drafter_speedup[hardware] = speedup
+            if ar_drafter_speedup[hardware] is not None:
+                logging.info(f"{Colors.CYAN}[Problem {problem_id}, {drafter_name}] [{hardware}] Win over AR drafter: {speedup / ar_drafter_speedup[hardware]:.3f}x.{Colors.RESET}")
 
         # save and visualize results
-        stats_per_round = pickled_data["stats_per_round"]
+        stats_each_round = pickled_data["stats_each_round"]
         if args.overwrite:
-            visualize_acc_rate_over_time(stats_per_round, veri_freq=args.veri_freq, acceptance_rate=acceptance_rate, output_dir=output_dir_figures, filename=f"{drafter_name}")
+            visualize_acc_rate_over_time(stats_each_round, spec_len=args.spec_len, acceptance_rate=acceptance_rate, output_dir=output_dir_figures, filename=f"{drafter_name}")
         else:
-            visualize_acc_rate_over_time(stats_per_round, veri_freq=args.veri_freq, acceptance_rate=acceptance_rate, output_dir=None, filename=None)
+            visualize_acc_rate_over_time(stats_each_round, spec_len=args.spec_len, acceptance_rate=acceptance_rate, output_dir=None, filename=None)
         
         print_sd_trajectory(pickled_data, target_tokenizer)
         
         pickled_data["num_speculation_rounds"] = num_speculation_rounds
         pickled_data["total_num_forward_passes"] = total_num_forward_passes
         pickled_data["accepted_tokens"] = accepted_tokens
+        pickled_data["drafted_tokens"] = drafted_tokens
         pickled_data["rejected_tokens"] = rejected_tokens
+        pickled_data["acceptance_rate"] = acceptance_rate
+        pickled_data["total_output_tokens"] = total_output_tokens  # not necessarily equal to num_target_tokens
         
-        if args.overwrite or (not os.path.exists(os.path.join(output_dir_pickles, f"{drafter_name}.pickle"))):
-            with open(os.path.join(output_dir_pickles, f"{drafter_name}.pickle"), "wb") as f:
+        if args.overwrite or (not os.path.exists(os.path.join(output_dir_pickles, f"{args.max_new_tokens}.pickle"))):
+            with open(os.path.join(output_dir_pickles, f"{args.max_new_tokens}.pickle"), "wb") as f:
                 pickle.dump(pickled_data, f)
-            with open(os.path.join(output_dir_pickles, f"{drafter_name}.txt"), "w") as f:
+            with open(os.path.join(output_dir_pickles, f"{args.max_new_tokens}.txt"), "w") as f:
                 pp = pprint.PrettyPrinter(width=1000, stream=f)  # large enough to fit list
                 pp.pprint(pickled_data)
 

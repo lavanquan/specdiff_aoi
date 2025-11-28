@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=profile_acc_rate_within_query_aime              # Job name
+#SBATCH --job-name=sweep_ar_math              # Job name
 #SBATCH --output="/home/rp2773/slurm_logs/%A.out"       # Standard output log
 #SBATCH --error="/home/rp2773/slurm_logs/%A.err"         # Standard error log
 #SBATCH --ntasks=1                            # Number of tasks (1 process)
 #SBATCH --cpus-per-task=8                     # Number of CPU cores per task
 #SBATCH --gres=gpu:2                        # Number of GPUs to allocate
 ##SBATCH --constraint="gpu80"
-#SBATCH --time=4:00:00                        # Time limit (24 hours max)
+#SBATCH --time=10:00:00                        # Time limit (24 hours max)
 #SBATCH --mem=20G                            # Memory allocation (adjust as needed)
 #SBATCH --mail-user=ruipan@princeton.edu  # Your email
 #SBATCH --mail-type=ALL  # Options: BEGIN, END, FAIL, REQUEUE, TIME_LIMIT, etc.
@@ -40,30 +40,31 @@ conda activate vllm_dllm
 
 OUTPUT_DIR="${DATA_DIR}/diffspec"
 
-# # actual run
-DATASETS=("aime")  #  "aime"
-NUM_QUESTIONS=30  # not useful, as we really only profile question 12
-VERI_FREQS=(2 3 4 5 6 7 8 9)
+DATASETS=("math")  #  "aime"
+NUM_QUESTIONS=30
 DRAFTER_THRESHOLDS=(0.05)
-# debug
-# DATASETS=("math")
-# NUM_QUESTIONS=1
-# DRAFTER_THRESHOLDS=(0.90 0.85 0.80 0.75 0.70 0.65 0.60 0.55 0.50 0.45 0.40 0.35 0.30 0.25 0.20 0.15 0.10 0.05)
+VERI_FREQS=(2 3 4 5 6 7 8 9)
 
 timestamp=$(date +"%Y_%m_%d_%H_%M")  # equivalent of datetime.now().strftime("%Y_%m_%d_%H_%M") in python
+echo "Timestamp: ${timestamp}"
 
 for DATASET_NAME in "${DATASETS[@]}"; do
-    python ../profiling/sweep_ar_drafter_freqs.py \
-        --dataset_name "${DATASET_NAME}" \
-        --output_dir "${OUTPUT_DIR}" \
-        --dllm_dir "${DLLM_DIR}" \
-        --num_questions "${NUM_QUESTIONS}" \
-        --log_level INFO \
-        --drafter_thresholds "${DRAFTER_THRESHOLDS[@]}" \
-        --veri_freqs "${VERI_FREQS[@]}" \
-        --overwrite \
-        --run_ar > "${OUTPUT_DIR}/logs/${timestamp}_${DATASET_NAME}.ansi" 2>&1
+    for FREQ in "${VERI_FREQS[@]}"; do
+        python ../sweep_dynamic_frequency_exploration.py \
+            --dataset_name "${DATASET_NAME}" \
+            --output_dir "${OUTPUT_DIR}" \
+            --dllm_dir "${DLLM_DIR}" \
+            --num_questions "${NUM_QUESTIONS}" \
+            --spec_len "${FREQ}" \
+            --drafter_thresholds "${DRAFTER_THRESHOLDS[@]}" \
+            --log_level INFO \
+            --run_ar \
+            --baseline_sweep \
+            --overwrite \
+            >> "${OUTPUT_DIR}/logs/${timestamp}_${DATASET_NAME}.ansi" 2>&1
+    done
 done
+
         # --read_pickle \
         # 
 

@@ -1,8 +1,16 @@
 # %%
+import os
+import sys
 import torch
 import logging
-
+from datasets import load_dataset, load_from_disk
 from transformers.cache_utils import DynamicCache
+
+system_prompt = """
+Solve the following math problem efficiently and clearly. Please reason step by step, 
+separate logical reasoning steps with two newline characters (\n\n), and put your final answer within \\boxed{{}}.
+Problem: {problem}
+"""
 
 class Colors:
     YELLOW = '\033[93m'
@@ -14,6 +22,120 @@ class Colors:
     STRIKETHROUGH = '\033[9m' # The code for a line across text
     RESET = '\033[0m'
 
+def is_interactive():
+    """Return True if running in an interactive shell (Jupyter or terminal)."""
+    try:
+        from IPython import get_ipython
+        shell = get_ipython().__class__.__name__
+        if shell == "ZMQInteractiveShell":  # Jupyter/IPython
+            return True
+    except Exception:
+        pass
+    return sys.stdout.isatty()
+
+def format_drafter_name(drafter_config):
+    draft_type, drafter_threshold, freq_scheme, lowconf_threshold, \
+        max_spec_len, incr_len = drafter_config
+    if draft_type == "ar":  # ar
+        return "ar_None_sf"
+    else:  # dllm
+        if freq_scheme == "sf":  # Fast-dLLM, static frequency
+            return f"dllm_{drafter_threshold}_sf"
+        elif freq_scheme == "df":  # FailFast
+            if lowconf_threshold is None:
+                return f"dllm_{drafter_threshold}_df"  # obsolete
+            else:
+                return f"dllm_{drafter_threshold}_df_{lowconf_threshold}_{max_spec_len}_{incr_len}"
+
+
+def get_proposal_str(args, spec_len, accepted_len, draft_proposal, final_token):
+    proposed_tokens_str = ""
+    for i in range(accepted_len):
+        proposed_tokens_str += args.target_tokenizer.decode([draft_proposal[i]])
+    proposed_tokens_str += f"{Colors.RED}{Colors.STRIKETHROUGH}"
+    for i in range(spec_len - accepted_len):
+        if i + accepted_len >= len(draft_proposal):
+            break
+        proposed_tokens_str += args.target_tokenizer.decode([draft_proposal[i + accepted_len]])
+    proposed_tokens_str += f"{Colors.RESET}"
+    proposed_tokens_str += f"{Colors.GREEN}{args.target_tokenizer.decode([final_token])}{Colors.RESET}"
+    return proposed_tokens_str
+
+def get_output_dir(args, problem_id, drafter_config):
+    output_dir_pickles, output_dir_figures = [os.path.join(
+        args.output_dir, 
+        x,
+        args.target_model_name_clean,
+        args.dataset_name, 
+        str(problem_id),
+        format_drafter_name(drafter_config),
+    ) for x in ["pickles", "figures"]]
+    for d in [output_dir_pickles, output_dir_figures]:
+        os.makedirs(d, exist_ok=True)
+    return output_dir_pickles, output_dir_figures
+
+
+def populate_dataset(args):
+    if args.dataset_name == "aime":
+        dataset = load_dataset("HuggingFaceH4/aime_2024")["train"]
+    elif args.dataset_name == "math":
+        dataset = load_dataset("HuggingFaceH4/MATH-500")["test"]
+    elif args.dataset_name == "gpqa":
+        if os.getenv("HF_HUB_OFFLINE", "0") == "1":
+            dataset = load_from_disk("/scratch/gpfs/rp2773/hf_cache/datasets/gpqa")
+        else:    
+            dataset = load_dataset("Idavidrein/gpqa", "gpqa_diamond")["train"]
+    else:
+        raise NotImplementedError
+    args.dataset = dataset
+
+def format_problem_and_options(args, problem_id):
+    if args.dataset_name == "aime":
+        problem = args.dataset["problem"][problem_id]
+        options = None
+    elif args.dataset_name == "math":
+        problem = args.dataset["problem"][problem_id]
+        options = None
+    elif args.dataset_name == "gpqa":
+        problem = args.dataset["Question"][problem_id]
+        options = {
+            "A": args.dataset["Correct Answer"][problem_id],
+            "B": args.dataset["Incorrect Answer 1"][problem_id],
+            "C": args.dataset["Incorrect Answer 2"][problem_id],
+            "D": args.dataset["Incorrect Answer 3"][problem_id],
+        }
+    return problem, options
+
+def get_first_user_msg(problem, options=None):
+    if options is None:
+        system_prompt = """
+        Solve the following math problem efficiently and clearly. Please reason step by step, 
+        separate logical reasoning steps with two newline characters (\n\n), and put your final answer within \\boxed{{}}.
+        Problem: {problem}
+        """
+        return system_prompt.format(problem=problem)
+    else:
+        system_prompt = """
+        What is the correct answer to the following problem? Please reason step by step. 
+        Separate logical reasoning steps with two newline characters (\n\n).
+        Put the final answer **strictly** in the format \\boxed{{X}}, where X is a single letter (A, B, C, or D).
+
+        **Example output:** \\boxed{{A}}
+
+        Problem: {problem}.
+        Choices: 
+        (A) {ans_a}
+        (B) {ans_b}
+        (C) {ans_c}
+        (D) {ans_d}
+        """
+        return system_prompt.format(
+            problem=problem,
+            ans_a=options["A"],
+            ans_b=options["B"],
+            ans_c=options["C"],
+            ans_d=options["D"],
+        )
 
 def merge_dynamic_caches(prev_cache, new_cache):
     merged = DynamicCache()
@@ -47,21 +169,35 @@ def join_outputs(output, output_to_append):
     )
     return output
 
+def get_output_tokens(stats_each_round):
+    output_token_ids = []
+    for round_id in range(len(stats_each_round)):
+        accepted_len = stats_each_round[round_id]["accepted_len"]
+        draft_proposal = stats_each_round[round_id]["~draft_proposal"]
+        output_token_ids.extend(draft_proposal[:accepted_len])
+
+        if stats_each_round[round_id]["bonus_token"] is not None:
+            output_token_ids.append(stats_each_round[round_id]["bonus_token"])
+        else:
+            output_token_ids.append(stats_each_round[round_id]["final_token"])
+    return output_token_ids
+
 def print_sd_trajectory(pickled_data, tokenizer):
     logging.info(f"{Colors.BOLD}--- Input ---{Colors.RESET}")
-    input_text = tokenizer.decode(pickled_data["orig_model_inputs"]["input_ids"][0], skip_special_tokens=False)
-    num_input_tokens = len(pickled_data["orig_model_inputs"]["input_ids"][0])
+    input_text = tokenizer.decode(pickled_data["orig_model_inputs"], skip_special_tokens=False)
+    num_input_tokens = len(pickled_data["orig_model_inputs"])
     logging.info(input_text)
     logging.info(f"{Colors.BOLD}--- Output ---{Colors.RESET}")
-    output_text = tokenizer.decode(pickled_data["stats_per_round"][-1]["current_token_ids"], skip_special_tokens=False)
+    output_tokens = get_output_tokens(pickled_data["stats_each_round"])
+    output_text = tokenizer.decode(output_tokens, skip_special_tokens=False)  # missing draft tokens in the last round
     logging.info(output_text)
     logging.info(f"{Colors.BOLD}--- Trajectory ---{Colors.RESET}")
-    stats_per_round = pickled_data["stats_per_round"]
+    stats_each_round = pickled_data["stats_each_round"]
     output_str = ""
-    for round_id in range(len(stats_per_round)):
-        draft_proposal = stats_per_round[round_id]["draft_proposal"]
-        target_tokens = stats_per_round[round_id]["target_tokens"]
-        accepted_len = stats_per_round[round_id]["accepted_len"]
+    for round_id in range(len(stats_each_round)):
+        draft_proposal = stats_each_round[round_id]["~draft_proposal"]
+        # target_tokens = stats_each_round[round_id]["target_tokens"]
+        accepted_len = stats_each_round[round_id]["accepted_len"]
         proposal_len = len(draft_proposal)
         str_this_round = ""
         
@@ -72,13 +208,10 @@ def print_sd_trajectory(pickled_data, tokenizer):
         str_this_round += f"{Colors.RED}{Colors.STRIKETHROUGH}{tokenizer.decode(draft_rejected, skip_special_tokens=False)}{Colors.RESET}"
                 
         if accepted_len < proposal_len:
-            target_token = target_tokens[accepted_len]
-            str_this_round += f"{Colors.GREEN}{tokenizer.decode([target_token], skip_special_tokens=False)}{Colors.RESET}"
-        elif accepted_len == proposal_len:
-            if round_id + 1 < len(stats_per_round):  # get the bonus token
-                next_round_current_tokens = stats_per_round[round_id + 1]["current_token_ids"]
-                target_token = next_round_current_tokens[-1]
-                str_this_round += f"{Colors.GREEN}{tokenizer.decode([target_token], skip_special_tokens=False)}{Colors.RESET}"
+            target_token = stats_each_round[round_id]["final_token"]
+        elif accepted_len == proposal_len:  # get the bonus token
+            target_token = stats_each_round[round_id]["bonus_token"]
+        str_this_round += f"{Colors.GREEN}{tokenizer.decode([target_token], skip_special_tokens=False)}{Colors.RESET}"
         
         output_str += str_this_round
     logging.info(output_str)

@@ -44,9 +44,9 @@ OUTPUT_DIR="${DATA_DIR}/diffspec"
 DATASETS=("aime")  #  "aime"
 NUM_QUESTIONS=30
 DRAFTER_THRESHOLDS=(0.05)
-SWEEP_CONF_THRESHOLD_FOR_LOWCONF_TOKENS=(0.3 0.35 0.4 0.45)  # 0.2, 0.25, 0.3, 0.35, 0.4, 0.45
-SWEEP_NUM_TOKENS_UPPER_BOUND=(35 40 45 50)
-SWEEP_NUM_TOKENS_TO_INCREMENT=(7 10)
+SWEEP_lowconf_threshold=(0.3 0.35 0.4 0.45)  # 0.2, 0.25, 0.3, 0.35, 0.4, 0.45
+SWEEP_max_spec_len=(35 40 45 50)
+SWEEP_incr_len=(7 10)
 
 timestamp=$(date +"%Y_%m_%d_%H_%M")  # equivalent of datetime.now().strftime("%Y_%m_%d_%H_%M") in python
 echo "timestamp: ${timestamp}"
@@ -57,11 +57,11 @@ for DATASET_NAME in "${DATASETS[@]}"; do
         --output_dir "${OUTPUT_DIR}" \
         --dllm_dir "${DLLM_DIR}" \
         --num_questions "${NUM_QUESTIONS}" \
-        --veri_freq 10 \
+        --spec_len 10 \
         --drafter_thresholds "${DRAFTER_THRESHOLDS[@]}" \
-        --sweep_conf_threshold_for_lowconf_tokens "${SWEEP_CONF_THRESHOLD_FOR_LOWCONF_TOKENS[@]}" \
-        --sweep_num_tokens_upper_bound "${SWEEP_NUM_TOKENS_UPPER_BOUND[@]}" \
-        --sweep_num_tokens_to_increment "${SWEEP_NUM_TOKENS_TO_INCREMENT[@]}" \
+        --sweep_lowconf_threshold "${SWEEP_lowconf_threshold[@]}" \
+        --sweep_max_spec_len "${SWEEP_max_spec_len[@]}" \
+        --sweep_incr_len "${SWEEP_incr_len[@]}" \
         --log_level INFO \
         --overwrite \
         --run_ar > "${OUTPUT_DIR}/logs/${timestamp}_${DATASET_NAME}.ansi" 2>&1
