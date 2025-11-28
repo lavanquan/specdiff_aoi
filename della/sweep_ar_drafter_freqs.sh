@@ -50,7 +50,7 @@ echo "Timestamp: ${timestamp}"
 
 for DATASET_NAME in "${DATASETS[@]}"; do
     for FREQ in "${VERI_FREQS[@]}"; do
-        python ../sweep_dynamic_frequency_exploration.py \
+        python ../failfast.py \
             --dataset_name "${DATASET_NAME}" \
             --output_dir "${OUTPUT_DIR}" \
             --dllm_dir "${DLLM_DIR}" \

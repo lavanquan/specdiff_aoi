@@ -52,7 +52,7 @@ timestamp=$(date +"%Y_%m_%d_%H_%M")  # equivalent of datetime.now().strftime("%Y
 echo "timestamp: ${timestamp}"
 
 for DATASET_NAME in "${DATASETS[@]}"; do
-    python ../sweep_dynamic_frequency_exploration.py \
+    python ../failfast.py \
         --dataset_name "${DATASET_NAME}" \
         --output_dir "${OUTPUT_DIR}" \
         --dllm_dir "${DLLM_DIR}" \
