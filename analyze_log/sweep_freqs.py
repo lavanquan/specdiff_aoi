@@ -136,6 +136,13 @@ if __name__ == "__main__":
     # log_file = "/scratch/gpfs/RAVIAN/rp2773/data/diffspec/logs/2025_11_25_22_26_math.ansi"  # lookahead dynamic frequency sweep
     # log_file = "/scratch/gpfs/RAVIAN/rp2773/data/diffspec/logs/2025_11_25_22_27_aime.ansi"  # lookahead dynamic frequency sweep
 
+    # log_file = "/scratch/gpfs/RAVIAN/rp2773/data/diffspec/logs/2025_11_26_13_42_math.ansi"  # lookahead dynamic frequency sweep
+    # log_file = "/scratch/gpfs/RAVIAN/rp2773/data/diffspec/logs/2025_11_26_13_52_aime.ansi"  # lookahead dynamic frequency sweep (incomplete--only managed to run 20 problems)
+    log_file = "/scratch/gpfs/RAVIAN/rp2773/data/diffspec/logs/2025_11_27_16_13_aime.ansi"  # lookahead dynamic frequency sweep (redid the above one)
+    # log_file = "/scratch/gpfs/RAVIAN/rp2773/data/diffspec/logs/2025_11_26_14_37_math.ansi"  # lookahead dynamic frequency sweep, baseline freq is 16
+    # log_file = "/scratch/gpfs/RAVIAN/rp2773/data/diffspec/logs/2025_11_26_14_34_aime.ansi"  # lookahead dynamic frequency sweep, baseline freq is 16
+
+
     data = parse_log(log_file)
     compute_averages_and_print(data)
 
