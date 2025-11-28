@@ -48,10 +48,19 @@ SWEEP_lowconf_threshold=(0.3 0.35 0.4 0.45)  # 0.2, 0.25, 0.3, 0.35, 0.4, 0.45
 SWEEP_max_spec_len=(35 40 45 50)
 SWEEP_incr_len=(7 10)
 
-timestamp=$(date +"%Y_%m_%d_%H_%M")  # equivalent of datetime.now().strftime("%Y_%m_%d_%H_%M") in python
-echo "timestamp: ${timestamp}"
 
 for DATASET_NAME in "${DATASETS[@]}"; do
+    timestamp=$(date +"%Y_%m_%d_%H_%M")  # equivalent of datetime.now().strftime("%Y_%m_%d_%H_%M") in python
+    echo "Dataset ${DATASET_NAME} timestamp: ${timestamp}"
+    logfile="${OUTPUT_DIR}/logs/${timestamp}_${DATASET_NAME}.ansi"
+
+    while [ -f "$logfile" ]; then
+        echo "Log file ${logfile} exists. Sleeping 60 seconds and retaking timestamp..."
+        sleep 60
+        timestamp=$(date +"%Y_%m_%d_%H_%M")
+        logfile="${OUTPUT_DIR}/logs/${timestamp}_${DATASET_NAME}.ansi"
+    done
+
     python ../failfast.py \
         --dataset_name "${DATASET_NAME}" \
         --output_dir "${OUTPUT_DIR}" \
@@ -65,7 +74,7 @@ for DATASET_NAME in "${DATASETS[@]}"; do
         --sweep_incr_len "${SWEEP_incr_len[@]}" \
         --log_level INFO \
         --overwrite \
-        --run_ar > "${OUTPUT_DIR}/logs/${timestamp}_${DATASET_NAME}.ansi" 2>&1
+        --run_ar > "$logfile" 2>&1
 done
 
         # --read_pickle \

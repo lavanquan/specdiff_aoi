@@ -45,10 +45,18 @@ NUM_QUESTIONS=30
 DRAFTER_THRESHOLDS=(0.05)
 VERI_FREQS=(3 4 5 6 7 8 9 10)
 
-timestamp=$(date +"%Y_%m_%d_%H_%M")  # equivalent of datetime.now().strftime("%Y_%m_%d_%H_%M") in python
-echo "Timestamp: ${timestamp}"
-
 for DATASET_NAME in "${DATASETS[@]}"; do
+    timestamp=$(date +"%Y_%m_%d_%H_%M")  # equivalent of datetime.now().strftime("%Y_%m_%d_%H_%M") in python
+    echo "Dataset ${DATASET_NAME} timestamp: ${timestamp}"
+    logfile="${OUTPUT_DIR}/logs/${timestamp}_${DATASET_NAME}.ansi"
+
+    while [ -f "$logfile" ]; then
+        echo "Log file ${logfile} exists. Sleeping 60 seconds and retaking timestamp..."
+        sleep 60
+        timestamp=$(date +"%Y_%m_%d_%H_%M")
+        logfile="${OUTPUT_DIR}/logs/${timestamp}_${DATASET_NAME}.ansi"
+    done
+
     for FREQ in "${VERI_FREQS[@]}"; do
         python ../failfast.py \
             --dataset_name "${DATASET_NAME}" \
@@ -62,7 +70,7 @@ for DATASET_NAME in "${DATASETS[@]}"; do
             --run_ar \
             --baseline_sweep \
             --overwrite \
-            >> "${OUTPUT_DIR}/logs/${timestamp}_${DATASET_NAME}.ansi" 2>&1
+            >> "$logfile" 2>&1
     done
 done
 
