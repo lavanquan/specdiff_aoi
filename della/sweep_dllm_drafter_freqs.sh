@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=sweep_dllm_0.05_gpqa              # Job name
+#SBATCH --job-name=sweep_dllm_0.9_math              # Job name
 #SBATCH --output="/home/rp2773/slurm_logs/%A.out"       # Standard output log
 #SBATCH --error="/home/rp2773/slurm_logs/%A.err"         # Standard error log
 #SBATCH --ntasks=1                            # Number of tasks (1 process)
@@ -15,8 +15,8 @@
 #SBATCH --partition=pli-lc
 #SBATCH --account=ravi-group
 
-# CLUSTER="ravi"
-CLUSTER="della"
+CLUSTER="ravi"
+# CLUSTER="della"
 
 # initialization: set environment variables based on the cluster
 if [ "$CLUSTER" = "ravi" ]; then
@@ -40,7 +40,7 @@ conda activate vllm_dllm
 
 OUTPUT_DIR="${DATA_DIR}/diffspec"
 
-DATASETS=("gpqa")  #  "aime"
+DATASETS=("aime")  #  "aime"
 NUM_QUESTIONS=30
 DRAFTER_THRESHOLDS=(0.05)
 # VERI_FREQS=(5 6 7 8 9 10 11 12 13 14 15 16)  # 0.9
@@ -70,11 +70,11 @@ for DATASET_NAME in "${DATASETS[@]}"; do
             --log_level INFO \
             --run_dllm_sf \
             --baseline_sweep \
-            --overwrite \
+            --read_pickle \
             >> "$logfile" 2>&1
     done
 done
 
         # --read_pickle \
-        # 
+        # --overwrite \
 

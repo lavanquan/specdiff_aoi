@@ -272,8 +272,17 @@ def compute_averages_and_print(data):
 
 
 if __name__ == "__main__":
-    # adjust log_file path as needed
-    log_file = "/data2/ruipan/diffspec/logs/2025_11_28_11_44_math.ansi"
+    # AR drafters
+    # log_file = "/data2/ruipan/diffspec/logs/2025_11_28_11_44_math.ansi"
+    # log_file = "/data2/ruipan/diffspec/logs/2025_11_28_11_48_aime.ansi"
+    
+    # dLLM 0.9
+    # log_file = "/data2/ruipan/diffspec/logs/2025_11_28_12_47_math.ansi"
+    # log_file = "/data2/ruipan/diffspec/logs/2025_11_28_12_50_aime.ansi"
+    
+    # dLLM 0.05
+    # log_file = "/data2/ruipan/diffspec/logs/2025_11_28_15_00_math.ansi"
+    log_file = "/data2/ruipan/diffspec/logs/2025_11_28_15_04_aime.ansi"
 
     data = parse_log(log_file)
     compute_averages_and_print(data)

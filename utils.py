@@ -106,36 +106,38 @@ def format_problem_and_options(args, problem_id):
         }
     return problem, options
 
-def get_first_user_msg(problem, options=None):
+def get_first_user_msg(args, problem, options=None):
     if options is None:
-        system_prompt = """
-        Solve the following math problem efficiently and clearly. Please reason step by step, 
-        separate logical reasoning steps with two newline characters (\n\n), and put your final answer within \\boxed{{}}.
-        Problem: {problem}
-        """
-        return system_prompt.format(problem=problem)
+        if args.dataset_name in ["aime", "math"]:
+            system_prompt = """
+            Solve the following math problem efficiently and clearly. Please reason step by step, 
+            separate logical reasoning steps with two newline characters (\n\n), and put your final answer within \\boxed{{}}.
+            Problem: {problem}
+            """
+            return system_prompt.format(problem=problem)
     else:
-        system_prompt = """
-        What is the correct answer to the following problem? Please reason step by step. 
-        Separate logical reasoning steps with two newline characters (\n\n).
-        Put the final answer **strictly** in the format \\boxed{{X}}, where X is a single letter (A, B, C, or D).
+        if args.dataset_name in ["gpqa"]:
+            system_prompt = """
+            What is the correct answer to the following problem? Please reason step by step. 
+            Separate logical reasoning steps with two newline characters (\n\n).
+            Put the final answer **strictly** in the format \\boxed{{X}}, where X is a single letter (A, B, C, or D).
 
-        **Example output:** \\boxed{{A}}
+            **Example output:** \\boxed{{A}}
 
-        Problem: {problem}.
-        Choices: 
-        (A) {ans_a}
-        (B) {ans_b}
-        (C) {ans_c}
-        (D) {ans_d}
-        """
-        return system_prompt.format(
-            problem=problem,
-            ans_a=options["A"],
-            ans_b=options["B"],
-            ans_c=options["C"],
-            ans_d=options["D"],
-        )
+            Problem: {problem}.
+            Choices: 
+            (A) {ans_a}
+            (B) {ans_b}
+            (C) {ans_c}
+            (D) {ans_d}
+            """
+            return system_prompt.format(
+                problem=problem,
+                ans_a=options["A"],
+                ans_b=options["B"],
+                ans_c=options["C"],
+                ans_d=options["D"],
+            )
 
 def merge_dynamic_caches(prev_cache, new_cache):
     merged = DynamicCache()

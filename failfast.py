@@ -324,29 +324,30 @@ target_tokenizer = AutoTokenizer.from_pretrained(args.target_model_name)
 args.target_tokenizer = target_tokenizer
 
 # %%
-target_model = AutoModelForCausalLM.from_pretrained(
-    args.target_model_name,
-    torch_dtype="auto",
-    device_map="auto"
-)
-dllm_name = "Efficient-Large-Model/Fast_dLLM_v2_1.5B"
-dllm = AutoModelForCausalLM.from_pretrained(
-    args.dllm_dir if args.dllm_dir is not None else dllm_name,
-    torch_dtype="auto",
-    device_map="auto",
-    trust_remote_code=True
-)
-# NOTE(ruipan): drafter and target should probably share the same tokenizer?
-# dllm_tokenizer = AutoTokenizer.from_pretrained(dllm_name, trust_remote_code=True)
-dllm_tokenizer = target_tokenizer
-if args.run_ar:
-    draft_model_name = "Qwen/Qwen2.5-1.5B-Instruct"
-    draft_model = AutoModelForCausalLM.from_pretrained(
-        draft_model_name,
+if not args.read_pickle:
+    target_model = AutoModelForCausalLM.from_pretrained(
+        args.target_model_name,
         torch_dtype="auto",
         device_map="auto"
     )
-    draft_tokenizer = target_tokenizer
+    dllm_name = "Efficient-Large-Model/Fast_dLLM_v2_1.5B"
+    dllm = AutoModelForCausalLM.from_pretrained(
+        args.dllm_dir if args.dllm_dir is not None else dllm_name,
+        torch_dtype="auto",
+        device_map="auto",
+        trust_remote_code=True
+    )
+    # NOTE(ruipan): drafter and target should probably share the same tokenizer?
+    # dllm_tokenizer = AutoTokenizer.from_pretrained(dllm_name, trust_remote_code=True)
+    dllm_tokenizer = target_tokenizer
+    if args.run_ar:
+        draft_model_name = "Qwen/Qwen2.5-1.5B-Instruct"
+        draft_model = AutoModelForCausalLM.from_pretrained(
+            draft_model_name,
+            torch_dtype="auto",
+            device_map="auto"
+        )
+        draft_tokenizer = target_tokenizer
 
 # %%
 for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
@@ -354,15 +355,16 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
     transformers.set_seed(42)  # reproducibility for each question-model-model config pair
     problem, options = format_problem_and_options(args, problem_id)
     messages = [
-        {"role": "user", "content": get_first_user_msg(problem, options)},
+        {"role": "user", "content": get_first_user_msg(args, problem, options)},
     ]
     text = args.target_tokenizer.apply_chat_template(
         messages,
         tokenize=False,
         add_generation_prompt=True
     )
-    orig_model_inputs = target_tokenizer([text], return_tensors="pt").to(target_model.device)
-    num_target_tokens = args.max_new_tokens  # drafters will generate this many tokens
+    if not args.read_pickle:
+        orig_model_inputs = target_tokenizer([text], return_tensors="pt").to(target_model.device)
+        num_target_tokens = args.max_new_tokens  # drafters will generate this many tokens
     
     # if not args.read_pickle:
     #     target_ids, orig_model_inputs = get_target_token_ids(target_model, target_tokenizer, messages, max_new_tokens=args.max_new_tokens)
@@ -593,7 +595,7 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
         pickled_data["acceptance_rate"] = acceptance_rate
         pickled_data["total_output_tokens"] = total_output_tokens  # not necessarily equal to num_target_tokens
         
-        if args.overwrite or (not os.path.exists(os.path.join(output_dir_pickles, f"{args.max_new_tokens}.pickle"))):
+        if (args.overwrite and not args.read_pickle) or (not os.path.exists(os.path.join(output_dir_pickles, f"{args.max_new_tokens}.pickle"))):
             with open(os.path.join(output_dir_pickles, f"{args.max_new_tokens}.pickle"), "wb") as f:
                 pickle.dump(pickled_data, f)
             with open(os.path.join(output_dir_pickles, f"{args.max_new_tokens}.txt"), "w") as f:
