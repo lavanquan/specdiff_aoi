@@ -352,7 +352,11 @@ if __name__ == "__main__":
     # FailFast (vLLM: dllm_0.05_df_0.4_60_10)
     # log_file = "/data2/ruipan/diffspec/logs/2025_11_28_13_31_math.ansi"
     # log_file = "/data2/ruipan/diffspec/logs/2025_11_28_13_31_aime.ansi"
-    log_file = "/data2/ruipan/diffspec/logs/2025_11_28_13_16_gpqa.ansi"
+    # log_file = "/data2/ruipan/diffspec/logs/2025_11_28_13_16_gpqa.ansi"
+    
+    # log_file = "/scratch/gpfs/RAVIAN/rp2773/data/diffspec/logs/2025_12_01_01_34_gpqa.ansi"  # AR drafter
+    # log_file = "/scratch/gpfs/RAVIAN/rp2773/data/diffspec/logs/2025_12_01_02_06_gpqa.ansi"  # dLLM 0.9
+    log_file = "/scratch/gpfs/RAVIAN/rp2773/data/diffspec/logs/2025_12_01_02_43_gpqa.ansi"  # FailFast
     
 
     data = parse_log(log_file)

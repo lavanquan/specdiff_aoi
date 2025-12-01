@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=sweep_dllm_0.9_math              # Job name
+#SBATCH --job-name=sweep_dllm_0.9_gpqa              # Job name
 #SBATCH --output="/home/rp2773/slurm_logs/%A.out"       # Standard output log
 #SBATCH --error="/home/rp2773/slurm_logs/%A.err"         # Standard error log
 #SBATCH --ntasks=1                            # Number of tasks (1 process)
@@ -15,8 +15,8 @@
 #SBATCH --partition=pli-lc
 #SBATCH --account=ravi-group
 
-CLUSTER="ravi"
-# CLUSTER="della"
+# CLUSTER="ravi"
+CLUSTER="della"
 
 # initialization: set environment variables based on the cluster
 if [ "$CLUSTER" = "ravi" ]; then
@@ -40,11 +40,13 @@ conda activate vllm_dllm
 
 OUTPUT_DIR="${DATA_DIR}/diffspec"
 
-DATASETS=("aime")  #  "aime"
+# TARGET_MODEL="Qwen/Qwen2.5-32B-Instruct"
+TARGET_MODEL="Qwen/Qwen2.5-14B-Instruct"
+DATASETS=("gpqa")  #  "aime"
 NUM_QUESTIONS=30
-DRAFTER_THRESHOLDS=(0.05)
-# VERI_FREQS=(5 6 7 8 9 10 11 12 13 14 15 16)  # 0.9
-VERI_FREQS=(5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20)  # 0.05
+DRAFTER_THRESHOLDS=(0.9)
+VERI_FREQS=(3 4 5 6 7 8 9 10 11 12 13 14 15 16)  # 0.9
+# VERI_FREQS=(5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20)  # 0.05
 
 for DATASET_NAME in "${DATASETS[@]}"; do
     timestamp=$(date +"%Y_%m_%d_%H_%M")  # equivalent of datetime.now().strftime("%Y_%m_%d_%H_%M") in python
@@ -62,6 +64,7 @@ for DATASET_NAME in "${DATASETS[@]}"; do
         python ../failfast.py \
             --dataset_name "${DATASET_NAME}" \
             --output_dir "${OUTPUT_DIR}" \
+            --target_model_name "${TARGET_MODEL}" \
             --dllm_dir "${DLLM_DIR}" \
             --num_questions "${NUM_QUESTIONS}" \
             --spec_len "${FREQ}" \
@@ -70,7 +73,7 @@ for DATASET_NAME in "${DATASETS[@]}"; do
             --log_level INFO \
             --run_dllm_sf \
             --baseline_sweep \
-            --read_pickle \
+            --overwrite \
             >> "$logfile" 2>&1
     done
 done

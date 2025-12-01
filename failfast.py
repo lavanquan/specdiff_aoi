@@ -307,12 +307,12 @@ construct_drafter_configs(args)  # populates args.drafter_configs
 populate_dataset(args)  # populates args.dataset
 
 args.latency = {  # all in ms
-    "HuggingFace_A6000": {  # a6000, hf generate latencies
-        "draft_fwd_pass": 28,  # dLLM 1.5B drafter forward pass latency
-        "target_tpt": {
-            "Qwen2.5-32B-Instruct": 105,  # Qwen2.5-32B, latency of short prefill pass (~=tpt)
-        },
-    },
+    # "HuggingFace_A6000": {  # a6000, hf generate latencies
+    #     "draft_fwd_pass": 28,  # dLLM 1.5B drafter forward pass latency
+    #     "target_tpt": {
+    #         "Qwen2.5-32B-Instruct": 105,  # Qwen2.5-32B, latency of short prefill pass (~=tpt)
+    #     },
+    # },
     "vLLM_A6000": {
         "draft_fwd_pass": 6.1,
         "target_tpt": {
