@@ -81,21 +81,22 @@ def populate_dataset(args):
     elif args.dataset_name == "math":
         dataset = load_dataset("HuggingFaceH4/MATH-500")["test"]
     elif args.dataset_name == "gpqa":
-        if os.getenv("HF_HUB_OFFLINE", "0") == "1":
-            dataset = load_from_disk("/scratch/gpfs/RAVIAN/rp2773/hf_cache/datasets/gpqa")
-        else:    
-            dataset = load_dataset("Idavidrein/gpqa", "gpqa_diamond")["train"]
+        # if os.getenv("HF_HUB_OFFLINE", "0") == "1":
+        #     dataset = load_from_disk("/scratch/gpfs/RAVIAN/rp2773/hf_cache/datasets/gpqa")
+        # else:    
+        dataset = load_dataset("Idavidrein/gpqa", "gpqa_diamond")["train"]
+    elif args.dataset_name == "mmlu":
+        dataset = load_dataset("TIGER-Lab/MMLU-Pro")["validation"]
     else:
         raise NotImplementedError
     args.dataset = dataset
 
 def format_problem_and_options(args, problem_id):
-    if args.dataset_name == "aime":
-        problem = args.dataset["problem"][problem_id]
-        options = None
-    elif args.dataset_name == "math":
-        problem = args.dataset["problem"][problem_id]
-        options = None
+    """
+    Returns a dictionary with the raw problem fields data.
+    """
+    if args.dataset_name in ["aime", "math"]:
+        return {"problem": args.dataset["problem"][problem_id]}
     elif args.dataset_name == "gpqa":
         problem = args.dataset["Question"][problem_id]
         options = {
@@ -104,40 +105,62 @@ def format_problem_and_options(args, problem_id):
             "C": args.dataset["Incorrect Answer 2"][problem_id],
             "D": args.dataset["Incorrect Answer 3"][problem_id],
         }
-    return problem, options
-
-def get_first_user_msg(args, problem, options=None):
-    if options is None:
-        if args.dataset_name in ["aime", "math"]:
-            system_prompt = """
-            Solve the following math problem efficiently and clearly. Please reason step by step, 
-            separate logical reasoning steps with two newline characters (\n\n), and put your final answer within \\boxed{{}}.
-            Problem: {problem}
-            """
-            return system_prompt.format(problem=problem)
+        return {"problem": problem, "options": options}
+    elif args.dataset_name == "mmlu":
+        data = args.dataset[problem_id]
+        return {
+            "problem": data["question"], 
+            "options": data["options"],
+            "category": data["category"],
+        }
     else:
-        if args.dataset_name in ["gpqa"]:
-            system_prompt = """
-            What is the correct answer to the following problem? Please reason step by step. 
-            Separate logical reasoning steps with two newline characters (\n\n).
-            Put the final answer **strictly** in the format \\boxed{{X}}, where X is a single letter (A, B, C, or D).
+        raise NotImplementedError
 
-            **Example output:** \\boxed{{A}}
+def get_first_user_msg(args, raw_data):
+    if args.dataset_name in ["aime", "math"]:
+        system_prompt = """
+        Solve the following math problem efficiently and clearly. Please reason step by step, 
+        separate logical reasoning steps with two newline characters (\n\n), and put your final answer within \\boxed{{}}.
+        Problem: {problem}
+        """
+        return system_prompt.format(problem=raw_data["problem"])
+    elif args.dataset_name == "gpqa":
+        system_prompt = """
+        What is the correct answer to the following problem? Please reason step by step. 
+        Separate logical reasoning steps with two newline characters (\n\n).
+        Put the final answer **strictly** in the format \\boxed{{X}}, where X is a single letter (A, B, C, or D).
 
-            Problem: {problem}.
-            Choices: 
-            (A) {ans_a}
-            (B) {ans_b}
-            (C) {ans_c}
-            (D) {ans_d}
-            """
-            return system_prompt.format(
-                problem=problem,
-                ans_a=options["A"],
-                ans_b=options["B"],
-                ans_c=options["C"],
-                ans_d=options["D"],
-            )
+        **Example output:** \\boxed{{A}}
+
+        Problem: {problem}.
+        Choices: 
+        (A) {ans_a}
+        (B) {ans_b}
+        (C) {ans_c}
+        (D) {ans_d}
+        """
+        return system_prompt.format(
+            problem=raw_data["problem"],
+            ans_a=raw_data["options"]["A"],
+            ans_b=raw_data["options"]["B"],
+            ans_c=raw_data["options"]["C"],
+            ans_d=raw_data["options"]["D"],
+        )
+    elif args.dataset_name == "mmlu":
+        system_prompt = """
+        The following is multiple choice question (with answers) about {category}.
+        Think step by step and then finish your answer with "the answer is (X)" where X is the correct letter choice.
+        
+        Question: {problem}
+        Choices: {options}
+        """
+        return system_prompt.format(
+            category=raw_data["category"],
+            problem=raw_data["problem"],
+            options=raw_data["options"],
+        )
+    else:
+        raise NotImplementedError
 
 def merge_dynamic_caches(prev_cache, new_cache):
     merged = DynamicCache()

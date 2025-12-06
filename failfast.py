@@ -236,7 +236,7 @@ def construct_drafter_configs(args):
 
 # %%
 parser = argparse.ArgumentParser(description="Profiles the acceptance rate of speculative decoding within a single query.")
-parser.add_argument("--dataset_name", type=str, choices=["aime", "math", "gpqa"], default="math",
+parser.add_argument("--dataset_name", type=str, choices=["aime", "math", "gpqa", "mmlu"], default="math",
                     help="Dataset")
 parser.add_argument("--output_dir", type=str, default="/data2/ruipan/diffspec", 
                     help="Where result pickle files (and output figures) will be written to")
@@ -357,9 +357,9 @@ if not args.read_pickle:
 for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
 # for problem_id in [2]:
     transformers.set_seed(42)  # reproducibility for each question-model-model config pair
-    problem, options = format_problem_and_options(args, problem_id)
+    raw_data = format_problem_and_options(args, problem_id)
     messages = [
-        {"role": "user", "content": get_first_user_msg(args, problem, options)},
+        {"role": "user", "content": get_first_user_msg(args, raw_data)},
     ]
     text = args.target_tokenizer.apply_chat_template(
         messages,
@@ -408,8 +408,7 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
             pickled_data = {
                 "orig_model_inputs": orig_model_inputs["input_ids"][0].tolist(),
                 # "target_ids": target_ids,  # not necessarily equal to current_token_ids at the end due to numerical differences/different kernels during rounds of prefill
-                "problem": problem,
-                "options": options,
+                "raw_data": raw_data,
                 "num_target_tokens": num_target_tokens,
                 "stats_each_round": [],
             }

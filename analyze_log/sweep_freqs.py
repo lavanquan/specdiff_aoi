@@ -1,5 +1,6 @@
 # %%
 import re
+import argparse
 from collections import defaultdict
 
 # --- Regex patterns ---
@@ -335,31 +336,12 @@ def compute_averages_and_print(data):
 
 
 if __name__ == "__main__":
-    # AR drafters
-    # log_file = "/data2/ruipan/diffspec/logs/2025_11_28_11_44_math.ansi"
-    # log_file = "/data2/ruipan/diffspec/logs/2025_11_28_11_48_aime.ansi"
-    # log_file = "/data2/ruipan/diffspec/logs/2025_11_28_11_14_gpqa.ansi"
-    
-    # dLLM 0.9
-    # log_file = "/data2/ruipan/diffspec/logs/2025_11_28_12_47_math.ansi"
-    # log_file = "/data2/ruipan/diffspec/logs/2025_11_28_12_50_aime.ansi"
-    # log_file = "/data2/ruipan/diffspec/logs/2025_11_28_11_19_gpqa.ansi"
-    
-    # dLLM 0.05
-    # log_file = "/data2/ruipan/diffspec/logs/2025_11_28_15_00_math.ansi"
-    # log_file = "/data2/ruipan/diffspec/logs/2025_11_28_15_04_aime.ansi"
-    
-    # FailFast (vLLM: dllm_0.05_df_0.4_60_10)
-    # log_file = "/data2/ruipan/diffspec/logs/2025_11_28_13_31_math.ansi"
-    # log_file = "/data2/ruipan/diffspec/logs/2025_11_28_13_31_aime.ansi"
-    # log_file = "/data2/ruipan/diffspec/logs/2025_11_28_13_16_gpqa.ansi"
-    
-    # log_file = "/scratch/gpfs/RAVIAN/rp2773/data/diffspec/logs/2025_12_01_01_34_gpqa.ansi"  # AR drafter
-    # log_file = "/scratch/gpfs/RAVIAN/rp2773/data/diffspec/logs/2025_12_01_02_06_gpqa.ansi"  # dLLM 0.9
-    log_file = "/scratch/gpfs/RAVIAN/rp2773/data/diffspec/logs/2025_12_01_02_43_gpqa.ansi"  # FailFast
-    
+    # usage: python sweep_freqs.py <log_file>
+    parser = argparse.ArgumentParser(description="Parse ansi log file.")
+    parser.add_argument("filename", type=str, help="Path to the .ansi log file")
+    args = parser.parse_args()
 
-    data = parse_log(log_file)
+    data = parse_log(args.filename)
     compute_averages_and_print(data)
 
 # %%

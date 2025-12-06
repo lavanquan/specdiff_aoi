@@ -1,2 +1,4 @@
 /logs
 *.pyc
+outputs/
+slurm_logs/
