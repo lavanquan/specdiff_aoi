@@ -236,7 +236,7 @@ def construct_drafter_configs(args):
 
 # %%
 parser = argparse.ArgumentParser(description="Profiles the acceptance rate of speculative decoding within a single query.")
-parser.add_argument("--dataset_name", type=str, choices=["aime", "math", "gpqa", "mmlu"], default="math",
+parser.add_argument("--dataset_name", type=str, choices=["aime", "math", "gpqa", "mmlu", "humaneval"], default="math",
                     help="Dataset")
 parser.add_argument("--output_dir", type=str, default="/data2/ruipan/diffspec", 
                     help="Where result pickle files (and output figures) will be written to")
@@ -329,6 +329,7 @@ args.target_tokenizer = target_tokenizer
 
 # %%
 if not args.read_pickle:
+    logging.info(f"{Colors.BOLD}=== Loading target model: {args.target_model_name} ==={Colors.RESET}")
     target_model = AutoModelForCausalLM.from_pretrained(
         args.target_model_name,
         torch_dtype="auto",
