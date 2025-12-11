@@ -15,7 +15,7 @@
 source ~/.bashrc
 
 . ~/init.sh <<EOF
-12.6
+-1
 vllm_dllm
 1
 EOF

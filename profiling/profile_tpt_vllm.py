@@ -7,7 +7,9 @@ import argparse
 import logging
 from openai import OpenAI
 
-sys.path.insert(1, os.path.dirname(os.getcwd()) + "/..")
+# Add root directory to path to import utils
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(1, root_dir)
 from utils import populate_dataset, format_problem_and_options, get_first_user_msg
 
 """
