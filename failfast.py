@@ -149,6 +149,7 @@ def get_next_tokens_dllm(dllm, args, orig_model_inputs, token_ids_so_far, spec_l
                         lowconf_threshold=None,
                         max_spec_len=None,
                         incr_len=None,
+                        last_round_rejected=None,
     ):
     """Get the next few tokens from the model given the token IDs so far.
     Difference is that the dLLM drafter itself determines how many tokens to output based on model internal signals.
@@ -180,6 +181,10 @@ def get_next_tokens_dllm(dllm, args, orig_model_inputs, token_ids_so_far, spec_l
             spec_len=spec_len,
             return_prefill_kvs=False,
             args=args,
+            lowconf_threshold=lowconf_threshold,
+            max_spec_len=max_spec_len,
+            incr_len=incr_len,
+            last_round_rejected=last_round_rejected,
         )
     else:
         generated_ids, actual_spec_len, prefill_output, num_forward_passes, forward_pass_latencies = dllm.generate_draft_tokens_arbitrary_length(
@@ -202,6 +207,7 @@ def get_next_tokens_dllm(dllm, args, orig_model_inputs, token_ids_so_far, spec_l
             lowconf_threshold=lowconf_threshold,
             max_spec_len=max_spec_len,
             incr_len=incr_len,
+            last_round_rejected=last_round_rejected,
         )
     
     full_output_seqlen = generated_ids.shape[1]
@@ -281,6 +287,7 @@ args.target_model_name_clean = args.target_model_name.split("/", 1)[1]
 
 ######custom fields for easier debugging######
 # args.log_level = "DEBUG"
+# args.disable_reusing_drafter_kvs = True
 # args.dataset_name = "gpqa"
 # args.overwrite = True
 # args.max_new_tokens = 1024
@@ -364,7 +371,7 @@ if not args.read_pickle:
 
 # %%
 for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
-# for problem_id in [2]:
+# for problem_id in [21]:
     transformers.set_seed(42)  # reproducibility for each question-model-model config pair
     raw_data = format_problem_and_options(args, problem_id)
     messages = [
@@ -454,6 +461,17 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
                                                                     prev_prefill_output=prev_prefill_output)
                             prev_prefill_output = prefill_output
                     else:  # dynamic frequency: drafter determines how many tokens to propose
+                        
+                        ###start of logic of reusing rejected drafts from the last round###
+                        last_round_proposal = pickled_data["stats_each_round"][-1]["~draft_proposal"] if num_speculation_rounds > 0 else []
+                        last_round_accepted_len = pickled_data["stats_each_round"][-1]["accepted_len"] if num_speculation_rounds > 0 else 0
+                        if last_round_accepted_len < len(last_round_proposal) - 1:  # there are salvagable rejected tokens in the last round
+                            # last_round_rejected = last_round_proposal[last_round_accepted_len+1:] if num_speculation_rounds > 0 else []
+                            last_round_rejected = None
+                        else:
+                            last_round_rejected = None
+                        ###end of logic of reusing rejected drafts from the last round###
+                        
                         draft_proposal, actual_spec_len, prefill_output, num_forward_passes, forward_pass_latencies = get_next_tokens_dllm(dllm, args, orig_model_inputs, current_token_ids, 
                                                                     spec_len=args.spec_len,  # number of speculative tokens proposed each time
                                                                     output_seqlen=3*args.block_size,  # 2 blocks of 32. Ensures spec_len tokens are generated in case they span over two blocks
@@ -463,7 +481,9 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
                                                                     prev_prefill_output=prev_prefill_output,
                                                                     lowconf_threshold=lowconf_threshold,
                                                                     max_spec_len=max_spec_len,
-                                                                    incr_len=incr_len)
+                                                                    incr_len=incr_len,
+                                                                    last_round_rejected=last_round_rejected,
+                                                                    )
                         prev_prefill_output = prefill_output
                         spec_len = actual_spec_len  # update spec_len to the actual number of tokens proposed
                         
@@ -583,7 +603,7 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
             total_tpt = latency_draft + latency_target
             avg_tpt = total_tpt / total_output_tokens
             speedup = args.latency[hardware]["target_tpt"][args.target_model_name_clean] / avg_tpt
-            logging.info(f"{Colors.CYAN}[Problem {problem_id}, {drafter_name}] [{hardware}] Speedup: {speedup:.2f}x (Drafter ratio {latency_draft / total_tpt * 100:.1f}% ({latency_draft:.1f}ms/{total_tpt:.1f}ms); Avg TPT of SD: {avg_tpt:.2f}ms){Colors.RESET}")
+            logging.info(f"{Colors.CYAN}[Problem {problem_id}, {drafter_name}] [{hardware}] Speedup: {speedup:.2f}x (Drafter ratio {latency_draft / total_tpt * 100:.1f}% ({latency_draft:.1f}ms/{total_tpt:.1f}ms); Avg TPT of SD: {avg_tpt:.2f}ms) (num output tokens: {total_output_tokens}){Colors.RESET}")
             
             if draft_type == "ar" and ar_drafter_speedup[hardware] is None:
                 ar_drafter_speedup[hardware] = speedup
