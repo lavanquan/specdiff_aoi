@@ -8,12 +8,14 @@
 ##SBATCH --constraint="gpu80"
 #SBATCH --time=6:00:00                        # Time limit (24 hours max)
 #SBATCH --mem=20G                            # Memory allocation (adjust as needed)
-#SBATCH --partition=pli-lc
-#SBATCH --account=ravi-group
+#SBATCH --partition=ailab​
+##SBATCH --partition=pli-lc
+##SBATCH --account=ravi-group
 
 source ~/.bashrc
 
 . ~/init.sh <<EOF
+-1
 vllm_dllm
 1
 EOF
