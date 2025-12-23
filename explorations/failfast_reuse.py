@@ -489,7 +489,7 @@ for problem_id in tqdm(range(args.num_questions), desc="Problems", position=0):
                                     logging.info(f"{Colors.YELLOW}[Round {num_speculation_rounds}] Salvaging tokens, veri_len {veri_len}{Colors.RESET}")
                                     spec_len = veri_len
                                     num_forward_passes = 1  # we only did one forward pass to get the first 10 draft tokens for comparison
-                                    # NOTE(ruipan): the above is an unrealistic assumption!!! Don't trust the output of this script
+                                    # NOTE(ruipan): the above is an unrealistic assumption!!! Don't trust the output of this script!!!
                                     draft_proposal = curr_round_proposal_1stround[:start_index_proposal] + last_round_rejected[start_index_rejected:]
                                     # logging.info(f"{Colors.YELLOW}[Round {num_speculation_rounds}] Updated draft proposal: {draft_proposal}{Colors.RESET}")
                         
