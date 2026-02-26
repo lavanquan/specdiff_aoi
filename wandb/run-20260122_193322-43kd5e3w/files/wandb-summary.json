@@ -1,0 +1,1 @@
+{"round/idx": 119, "round/wall_ms": 404.6544320881367, "round/acceptance_rate": 1.0, "round/accepted_tok_per_sec": 59.30986564549138, "round/accepted_tokens": 24, "round/drafted_tokens": 24, "round/active_batch_size": 3, "progress/done": 5, "_timestamp": 1769070923.6165674, "_runtime": 121.55275225639343, "_step": 117, "_wandb": {"runtime": 131}}

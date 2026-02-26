@@ -1,0 +1,115 @@
+Traceback (most recent call last):
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/huggingface_hub/utils/_http.py", line 409, in hf_raise_for_status
+    response.raise_for_status()
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/requests/models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 404 Client Error: Not Found for url: https://huggingface.co/datasets/HuggingFaceH4/MATH-500/resolve/6e4ed1a2a79af7d8630a6b768ec859cb5af4d3be/MATH-500.py
+The above exception was the direct cause of the following exception:
+Traceback (most recent call last):
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/datasets/load.py", line 982, in dataset_module_factory
+    api.hf_hub_download(
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/huggingface_hub/utils/_validators.py", line 114, in _inner_fn
+    return fn(*args, **kwargs)
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/huggingface_hub/hf_api.py", line 5528, in hf_hub_download
+    return hf_hub_download(
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/huggingface_hub/utils/_validators.py", line 114, in _inner_fn
+    return fn(*args, **kwargs)
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/huggingface_hub/file_download.py", line 1010, in hf_hub_download
+    return _hf_hub_download_to_cache_dir(
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/huggingface_hub/file_download.py", line 1073, in _hf_hub_download_to_cache_dir
+    (url_to_download, etag, commit_hash, expected_size, xet_file_data, head_call_error) = _get_metadata_or_catch_error(
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/huggingface_hub/file_download.py", line 1546, in _get_metadata_or_catch_error
+    metadata = get_hf_file_metadata(
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/huggingface_hub/utils/_validators.py", line 114, in _inner_fn
+    return fn(*args, **kwargs)
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/huggingface_hub/file_download.py", line 1463, in get_hf_file_metadata
+    r = _request_wrapper(
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/huggingface_hub/file_download.py", line 286, in _request_wrapper
+    response = _request_wrapper(
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/huggingface_hub/file_download.py", line 310, in _request_wrapper
+    hf_raise_for_status(response)
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/huggingface_hub/utils/_http.py", line 420, in hf_raise_for_status
+    raise _format(EntryNotFoundError, message, response) from e
+huggingface_hub.errors.EntryNotFoundError: 404 Client Error. (Request ID: Root=1-6978771b-77ae4f997025436b34a04cf7;2f2cba17-40a9-49cd-95c9-3b8abb5d62e3)
+Entry Not Found for url: https://huggingface.co/datasets/HuggingFaceH4/MATH-500/resolve/6e4ed1a2a79af7d8630a6b768ec859cb5af4d3be/MATH-500.py.
+During handling of the above exception, another exception occurred:
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/usr/lib/python3.10/multiprocessing/spawn.py", line 116, in spawn_main
+    exitcode = _main(fd, parent_sentinel)
+  File "/usr/lib/python3.10/multiprocessing/spawn.py", line 125, in _main
+    prepare(preparation_data)
+  File "/usr/lib/python3.10/multiprocessing/spawn.py", line 236, in prepare
+    _fixup_main_from_path(data['init_main_from_path'])
+  File "/usr/lib/python3.10/multiprocessing/spawn.py", line 287, in _fixup_main_from_path
+    main_content = runpy.run_path(main_path,
+  File "/usr/lib/python3.10/runpy.py", line 289, in run_path
+    return _run_module_code(code, init_globals, run_name,
+  File "/usr/lib/python3.10/runpy.py", line 96, in _run_module_code
+    _run_code(code, mod_globals, init_globals,
+  File "/usr/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/share/home/qula0496/quan/speculative_decoding/specdiff_aoi/failfast.py", line 933, in <module>
+    populate_dataset(args)  # populates args.dataset
+  File "/share/home/qula0496/quan/speculative_decoding/specdiff_aoi/utils.py", line 144, in populate_dataset
+    dataset = load_dataset("HuggingFaceH4/MATH-500")["test"]
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/datasets/load.py", line 1392, in load_dataset
+    builder_instance = load_dataset_builder(
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/datasets/load.py", line 1132, in load_dataset_builder
+    dataset_module = dataset_module_factory(
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/datasets/load.py", line 1004, in dataset_module_factory
+    ).get_module()
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/datasets/load.py", line 608, in get_module
+    exported_dataset_infos = _dataset_viewer.get_exported_dataset_infos(
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/datasets/utils/_dataset_viewer.py", line 71, in get_exported_dataset_infos
+    info_response = get_session().get(
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/requests/sessions.py", line 602, in get
+    return self.request("GET", url, **kwargs)
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/requests/sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/requests/sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/huggingface_hub/utils/_http.py", line 96, in send
+    return super().send(request, *args, **kwargs)
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/requests/adapters.py", line 644, in send
+    resp = conn.urlopen(
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/urllib3/connectionpool.py", line 793, in urlopen
+    response = self._make_request(
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/urllib3/connectionpool.py", line 467, in _make_request
+    self._validate_conn(conn)
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/urllib3/connectionpool.py", line 1099, in _validate_conn
+    conn.connect()
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/urllib3/connection.py", line 653, in connect
+    sock_and_verified = _ssl_wrap_socket_and_match_hostname(
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/urllib3/connection.py", line 806, in _ssl_wrap_socket_and_match_hostname
+    ssl_sock = ssl_wrap_socket(
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/urllib3/util/ssl_.py", line 465, in ssl_wrap_socket
+    ssl_sock = _ssl_wrap_socket_impl(sock, context, tls_in_tls, server_hostname)
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/urllib3/util/ssl_.py", line 509, in _ssl_wrap_socket_impl
+    return ssl_context.wrap_socket(sock, server_hostname=server_hostname)
+  File "/usr/lib/python3.10/ssl.py", line 513, in wrap_socket
+    return self.sslsocket_class._create(
+  File "/usr/lib/python3.10/ssl.py", line 1100, in _create
+    self.do_handshake()
+  File "/usr/lib/python3.10/ssl.py", line 1371, in do_handshake
+    self._sslobj.do_handshake()
+KeyboardInterrupt
+Exception ignored in atexit callback: <bound method Sentry.end_session of <wandb.analytics.sentry.Sentry object at 0x7f469ede2770>>
+Traceback (most recent call last):
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/wandb/analytics/sentry.py", line 43, in wrapper
+    return func(self, *args, **kwargs)
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/wandb/analytics/sentry.py", line 178, in end_session
+    client.flush()
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/sentry_sdk/client.py", line 756, in flush
+    self.transport.flush(timeout=timeout, callback=callback)
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/sentry_sdk/transport.py", line 553, in flush
+    self._worker.flush(timeout, callback)
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/sentry_sdk/worker.py", line 99, in flush
+    self._wait_flush(timeout, callback)
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/sentry_sdk/worker.py", line 115, in _wait_flush
+    if not self._timed_queue_join(timeout - initial_timeout):
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/sentry_sdk/worker.py", line 54, in _timed_queue_join
+    queue.all_tasks_done.wait(timeout=delay)
+  File "/usr/lib/python3.10/threading.py", line 324, in wait
+    gotit = waiter.acquire(True, timeout)
+KeyboardInterrupt:

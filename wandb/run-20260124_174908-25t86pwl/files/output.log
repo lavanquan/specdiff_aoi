@@ -1,0 +1,183 @@
+
+[0124 17:50:41 INFO] [91mGenerated ids contain STOP tokens! [90, 19, 17, 92, 151645]
+[0124 17:50:44 INFO] [91mGenerated ids contain STOP tokens! [59, 151645]
+[0124 17:51:53 INFO] [91mGenerated ids contain STOP tokens! [3417, 59, 568, 151645]
+[0124 17:52:05 INFO] [91mGenerated ids contain STOP tokens! [198, 73594, 151645]
+[0124 17:52:05 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 17:52:10 INFO] [91mGenerated ids contain STOP tokens! [1380, 498, 2115, 1007, 30, 151645]
+[0124 17:52:11 INFO] [91mGenerated ids contain STOP tokens! [553, 3019, 30, 151645]
+[0124 17:52:15 INFO] [91mGenerated ids contain STOP tokens! [198, 59, 79075, 90, 2493, 532, 151645]
+[0124 17:52:16 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 17:52:18 INFO] [91mGenerated ids contain STOP tokens! [198, 151645]
+[0124 17:53:27 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 17:53:43 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 17:54:36 INFO] [91mGenerated ids contain STOP tokens! [90, 1931, 92, 9904, 3417, 151645]
+[0124 17:54:36 INFO] [91mGenerated ids contain STOP tokens! [13, 3417, 151645]
+[0124 17:54:37 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 17:55:23 INFO] [91mGenerated ids contain STOP tokens! [11035, 568, 151645]
+[0124 17:55:48 INFO] [91mGenerated ids contain STOP tokens! [11035, 568, 151645]
+[0124 17:57:32 INFO] [91mGenerated ids contain STOP tokens! [79075, 90, 19, 92, 151645]
+[0124 17:58:16 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 17:58:41 INFO] [91mGenerated ids contain STOP tokens! [11520, 79075, 90, 20, 11035, 568, 151645]
+[0124 17:58:48 INFO] [91mGenerated ids contain STOP tokens! [90, 20, 18, 92, 151645]
+[0124 17:59:20 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 17:59:23 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 17:59:32 INFO] [91mGenerated ids contain STOP tokens! [16, 16, 11035, 568, 151645]
+[0124 17:59:56 INFO] [91mGenerated ids contain STOP tokens! [90, 20, 7810, 151645]
+[0124 18:00:09 INFO] [91mGenerated ids contain STOP tokens! [90, 20, 92, 151645]
+[0124 18:01:07 INFO] [91mGenerated ids contain STOP tokens! [3417, 624, 59, 60, 151645]
+[0124 18:01:09 INFO] [91mGenerated ids contain STOP tokens! [90, 16, 532, 59, 60, 151645]
+[0124 18:01:27 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:02:27 INFO] [91mGenerated ids contain STOP tokens! [21, 24884, 43298, 532, 59, 60, 151645]
+[0124 18:02:28 INFO] [91mGenerated ids contain STOP tokens! [59, 60, 151645]
+[0124 18:02:41 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:02:55 INFO] [91mGenerated ids contain STOP tokens! [198, 151645]
+[0124 18:03:36 INFO] [91mGenerated ids contain STOP tokens! [35702, 64498, 59, 11, 87, 92, 151645]
+[0124 18:04:56 INFO] [91mGenerated ids contain STOP tokens! [79075, 90, 17, 532, 59, 60, 151645]
+[0124 18:05:27 INFO] [91mGenerated ids contain STOP tokens! [90, 17, 19, 15, 92, 151645]
+[0124 18:05:28 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:05:47 INFO] [91mGenerated ids contain STOP tokens! [90, 18, 20, 92, 151645]
+[0124 18:06:01 INFO] [91mGenerated ids contain STOP tokens! [198, 59, 79075, 90, 18, 20, 92, 151645]
+[0124 18:06:56 INFO] [91mGenerated ids contain STOP tokens! [568, 151645]
+[0124 18:07:11 INFO] [91mGenerated ids contain STOP tokens! [59, 60, 151645]
+[0124 18:08:35 INFO] [91mGenerated ids contain STOP tokens! [90, 16, 15, 92, 7110, 60, 151645]
+[0124 18:08:41 INFO] [91mGenerated ids contain STOP tokens! [198, 151645]
+[0124 18:08:41 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:11:55 INFO] [91mGenerated ids contain STOP tokens! [90, 16, 21, 92, 151645]
+[0124 18:12:27 INFO] [91mGenerated ids contain STOP tokens! [90, 17, 15, 19, 62, 20, 92, 151645]
+[0124 18:12:28 INFO] [91mGenerated ids contain STOP tokens! [92, 151645]
+[0124 18:12:29 INFO] [91mGenerated ids contain STOP tokens! [20, 3417, 151645]
+[0124 18:12:29 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:12:30 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:12:33 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:12:34 INFO] [91mGenerated ids contain STOP tokens! [198, 820, 220, 16, 15, 151645]
+[0124 18:13:12 INFO] [91mGenerated ids contain STOP tokens! [59, 60, 151645]
+[0124 18:13:13 INFO] [91mGenerated ids contain STOP tokens! [198, 820, 151645]
+[0124 18:13:13 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:13:15 INFO] [91mGenerated ids contain STOP tokens! [11520, 37018, 198, 151645]
+[0124 18:13:15 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:13:16 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:14:13 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:14:39 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:14:44 INFO] [91mGenerated ids contain STOP tokens! [198, 151645]
+[0124 18:14:45 INFO] [91mGenerated ids contain STOP tokens! [198, 820, 220, 21, 15, 151645]
+[0124 18:14:45 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:14:57 INFO] [91mGenerated ids contain STOP tokens! [13, 151645]
+[0124 18:16:06 INFO] [91mGenerated ids contain STOP tokens! [11520, 79075, 90, 19, 11035, 568, 151645]
+[0124 18:16:20 INFO] [91mGenerated ids contain STOP tokens! [20, 16, 11035, 568, 151645]
+[0124 18:16:36 INFO] [91mGenerated ids contain STOP tokens! [90, 16, 7810, 151645]
+[0124 18:16:37 INFO] [91mGenerated ids contain STOP tokens! [90, 16, 27275, 820, 220, 16, 151645]
+[0124 18:16:37 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:18:11 INFO] [91mGenerated ids contain STOP tokens! [92, 151645]
+[0124 18:18:12 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:18:16 INFO] [91mGenerated ids contain STOP tokens! [90, 15, 532, 59, 60, 151645]
+[0124 18:18:16 INFO] [91mGenerated ids contain STOP tokens! [532, 59, 60, 151645]
+[0124 18:19:11 INFO] [91mGenerated ids contain STOP tokens! [90, 16, 15170, 22, 3417, 11035, 568, 151645]
+[0124 18:19:11 INFO] [91mGenerated ids contain STOP tokens! [90, 22, 3417, 59, 568, 151645]
+[0124 18:19:12 INFO] [91mGenerated ids contain STOP tokens! [90, 22, 3417, 11035, 568, 151645]
+[0124 18:19:55 INFO] [91mGenerated ids contain STOP tokens! [568, 151645]
+[0124 18:20:41 INFO] [91mGenerated ids contain STOP tokens! [90, 19, 19, 13, 16, 7810, 151645]
+[0124 18:22:53 INFO] [91mGenerated ids contain STOP tokens! [16, 18, 624, 59, 60, 151645]
+[0124 18:22:58 INFO] [91mGenerated ids contain STOP tokens! [18, 59, 1291, 9139, 624, 59, 60, 151645]
+[0124 18:22:59 INFO] [91mGenerated ids contain STOP tokens! [13, 151645]
+[0124 18:23:46 INFO] [91mGenerated ids contain STOP tokens! [79075, 90, 17, 11035, 568, 151645]
+[0124 18:23:48 INFO] [91mGenerated ids contain STOP tokens! [90, 16, 17, 15, 92, 151645]
+[0124 18:23:48 INFO] [91mGenerated ids contain STOP tokens! [15, 92, 151645]
+[0124 18:24:53 INFO] [91mGenerated ids contain STOP tokens! [25, 198, 151645]
+[0124 18:24:55 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:24:56 INFO] [91mGenerated ids contain STOP tokens! [11047, 13, 151645]
+[0124 18:24:57 INFO] [91mGenerated ids contain STOP tokens! [4236, 1635, 13, 151645]
+[0124 18:26:05 INFO] [91mGenerated ids contain STOP tokens! [13, 151645]
+[0124 18:27:11 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:27:15 INFO] [91mGenerated ids contain STOP tokens! [61, 77, 59, 568, 151645]
+[0124 18:29:21 INFO] [91mGenerated ids contain STOP tokens! [43298, 92, 12947, 151645]
+[0124 18:31:14 INFO] [91mGenerated ids contain STOP tokens! [90, 21, 532, 151645]
+[0124 18:31:14 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:31:32 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:31:34 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:31:38 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:31:39 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:31:39 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:31:39 INFO] [91mGenerated ids contain STOP tokens! [198, 151645]
+[0124 18:31:40 INFO] [91mGenerated ids contain STOP tokens! [198, 151645]
+[0124 18:31:40 INFO] [91mGenerated ids contain STOP tokens! [198, 151645]
+[0124 18:31:41 INFO] [91mGenerated ids contain STOP tokens! [198, 151645]
+[0124 18:31:42 INFO] [91mGenerated ids contain STOP tokens! [198, 151645]
+[0124 18:31:43 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:31:54 INFO] [91mGenerated ids contain STOP tokens! [198, 73594, 151645]
+[0124 18:31:55 INFO] [91mGenerated ids contain STOP tokens! [198, 73594, 151645]
+[0124 18:31:55 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:31:56 INFO] [91mGenerated ids contain STOP tokens! [7354, 304, 279, 1973, 13, 151645]
+[0124 18:31:58 INFO] [91mGenerated ids contain STOP tokens! [304, 279, 3491, 13, 151645]
+[0124 18:34:07 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:34:30 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:34:30 INFO] [91mGenerated ids contain STOP tokens! [59, 151645]
+[0124 18:35:35 INFO] [91mGenerated ids contain STOP tokens! [198, 151645]
+[0124 18:35:36 INFO] [91mGenerated ids contain STOP tokens! [59, 79075, 90, 22, 151645]
+[0124 18:37:30 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:38:37 INFO] [91mGenerated ids contain STOP tokens! [568, 151645]
+[0124 18:39:04 INFO] [91mGenerated ids contain STOP tokens! [79075, 96065, 17, 11, 19, 9139, 659, 151645]
+[0124 18:39:05 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:40:23 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:42:36 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:43:03 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:43:53 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:45:08 INFO] [91mGenerated ids contain STOP tokens! [35702, 37018, 90, 16, 15170, 19, 3417, 151645]
+[0124 18:45:08 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:46:21 INFO] [91mGenerated ids contain STOP tokens! [79075, 90, 23, 11035, 568, 151645]
+[0124 18:47:08 INFO] [91mGenerated ids contain STOP tokens! [198, 17, 151645]
+[0124 18:47:09 INFO] [91mGenerated ids contain STOP tokens! [59, 340, 17, 19, 151645]
+[0124 18:48:26 INFO] [91mGenerated ids contain STOP tokens! [59, 60, 151645]
+[0124 18:48:29 INFO] [91mGenerated ids contain STOP tokens! [198, 820, 151645]
+[0124 18:48:29 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:50:04 INFO] [91mGenerated ids contain STOP tokens! [25, 1124, 79075, 90, 18, 7810, 151645]
+[0124 18:50:05 INFO] [91mGenerated ids contain STOP tokens! [11520, 79075, 90, 18, 11035, 568, 151645]
+[0124 18:50:46 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:52:03 INFO] [91mGenerated ids contain STOP tokens! [2555, 3417, 59, 568, 151645]
+[0124 18:52:03 INFO] [91mGenerated ids contain STOP tokens! [568, 151645]
+[0124 18:53:05 INFO] [91mGenerated ids contain STOP tokens! [16, 11, 481, 16, 11035, 11035, 568, 151645]
+[0124 18:53:05 INFO] [91mGenerated ids contain STOP tokens! [3417, 59, 568, 151645]
+[0124 18:53:06 INFO] [91mGenerated ids contain STOP tokens! [11035, 8, 151645]
+[0124 18:53:06 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:53:55 INFO] [91mGenerated ids contain STOP tokens! [151645]
+[0124 18:56:17 INFO] [91mGenerated ids contain STOP tokens! [92, 1124, 1291, 23439, 59, 60, 151645]
+[0124 18:56:54 INFO] [91mGenerated ids contain STOP tokens! [90, 23, 16, 532, 59, 60, 151645]
+[0124 18:56:54 INFO] [91mGenerated ids contain STOP tokens! [20, 532, 59, 60, 151645]
+[0124 18:59:20 INFO] [91mGenerated ids contain STOP tokens! [90, 19, 16, 7810, 151645]
+[0124 19:02:00 INFO] [91mGenerated ids contain STOP tokens! [568, 151645]
+Process Process-3:
+Traceback (most recent call last):
+  File "/usr/lib/python3.10/multiprocessing/process.py", line 314, in _bootstrap
+    self.run()
+  File "/usr/lib/python3.10/multiprocessing/process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "/share/home/qula0496/quan/speculative_decoding/specdiff_aoi/failfast.py", line 374, in drafter_worker
+    msg = in_q.get()
+  File "/usr/lib/python3.10/multiprocessing/queues.py", line 103, in get
+    res = self._recv_bytes()
+  File "/usr/lib/python3.10/multiprocessing/connection.py", line 216, in recv_bytes
+    buf = self._recv_bytes(maxlength)
+  File "/usr/lib/python3.10/multiprocessing/connection.py", line 414, in _recv_bytes
+    buf = self._recv(4)
+  File "/usr/lib/python3.10/multiprocessing/connection.py", line 379, in _recv
+    chunk = read(handle, remaining)
+KeyboardInterrupt
+Exception ignored in atexit callback: <bound method Sentry.end_session of <wandb.analytics.sentry.Sentry object at 0x7f4d3cdd6770>>
+Traceback (most recent call last):
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/wandb/analytics/sentry.py", line 43, in wrapper
+    return func(self, *args, **kwargs)
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/wandb/analytics/sentry.py", line 178, in end_session
+    client.flush()
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/sentry_sdk/client.py", line 756, in flush
+    self.transport.flush(timeout=timeout, callback=callback)
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/sentry_sdk/transport.py", line 553, in flush
+    self._worker.flush(timeout, callback)
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/sentry_sdk/worker.py", line 99, in flush
+    self._wait_flush(timeout, callback)
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/sentry_sdk/worker.py", line 115, in _wait_flush
+    if not self._timed_queue_join(timeout - initial_timeout):
+  File "/home/qula0496/quan/.venv/lib/python3.10/site-packages/sentry_sdk/worker.py", line 54, in _timed_queue_join
+    queue.all_tasks_done.wait(timeout=delay)
+  File "/usr/lib/python3.10/threading.py", line 324, in wait
+    gotit = waiter.acquire(True, timeout)
+KeyboardInterrupt:

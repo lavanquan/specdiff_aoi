@@ -1,0 +1,12 @@
+
+
+
+
+
+Loading checkpoint shards: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 4/4 [00:09<00:00,  2.40s/it]
+Math completed:   0%|                                                                                                                                                 | 0/300 [00:00<?, ?q/s]Traceback (most recent call last):
+  File "/share/home/qula0496/quan/speculative_decoding/specdiff_aoi/failfast.py", line 1194, in <module>
+    stats = coordinator_loop(args, target_model, target_tokenizer, num_workers, in_qs, out_q)
+  File "/share/home/qula0496/quan/speculative_decoding/specdiff_aoi/failfast.py", line 955, in coordinator_loop
+    proposed = optimizer_pf_log(
+TypeError: optimizer_pf_log() got an unexpected keyword argument 'ema_acc'

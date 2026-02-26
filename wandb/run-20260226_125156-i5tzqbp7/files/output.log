@@ -1,0 +1,11 @@
+
+
+Loading checkpoint shards: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 4/4 [00:02<00:00,  1.63it/s]
+Math completed:   0%|                                                                                                                                                 | 0/300 [00:00<?, ?q/s]Traceback (most recent call last):
+  File "/share/home/qula0496/quan/speculative_decoding/specdiff_aoi/failfast.py", line 1193, in <module>
+    stats = coordinator_loop(args, target_model, target_tokenizer, num_workers, in_qs, out_q)
+  File "/share/home/qula0496/quan/speculative_decoding/specdiff_aoi/failfast.py", line 954, in coordinator_loop
+    proposed = optimizer_pf_log(
+  File "/share/home/qula0496/quan/speculative_decoding/specdiff_aoi/failfast.py", line 565, in optimizer_pf_log
+    ema_acc[w] = min(1.0 - 1e-6, max(1e-6, ema_acc))
+TypeError: '>' not supported between instances of 'list' and 'float'

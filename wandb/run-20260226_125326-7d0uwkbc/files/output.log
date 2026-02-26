@@ -1,0 +1,9 @@
+
+
+Loading checkpoint shards: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 4/4 [00:02<00:00,  1.86it/s]
+Math completed:   0%|                                                                                                                                                 | 0/300 [00:00<?, ?q/s]Traceback (most recent call last):
+  File "/share/home/qula0496/quan/speculative_decoding/specdiff_aoi/failfast.py", line 1193, in <module>
+    stats = coordinator_loop(args, target_model, target_tokenizer, num_workers, in_qs, out_q)
+  File "/share/home/qula0496/quan/speculative_decoding/specdiff_aoi/failfast.py", line 954, in coordinator_loop
+    proposed = optimizer_pf_log(
+NameError: name 'optimizer_pf_log' is not defined

@@ -1,0 +1,608 @@
+2026-02-26 12:54:14,157 INFO    StreamThr :1667304 [internal.py:wandb_internal():86] W&B internal server running at pid: 1667304, started at: 2026-02-26 12:54:14.155720
+2026-02-26 12:54:14,158 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: status
+2026-02-26 12:54:14,159 INFO    WriterThread:1667304 [datastore.py:open_for_write():87] open: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125414-s7ylmxz3/run-s7ylmxz3.wandb
+2026-02-26 12:54:14,160 DEBUG   SenderThread:1667304 [sender.py:send():382] send: header
+2026-02-26 12:54:14,160 DEBUG   SenderThread:1667304 [sender.py:send():382] send: run
+2026-02-26 12:54:14,396 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: stop_status
+2026-02-26 12:54:14,396 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: stop_status
+2026-02-26 12:54:14,400 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: internal_messages
+2026-02-26 12:54:15,037 INFO    SenderThread:1667304 [dir_watcher.py:__init__():211] watching files in: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125414-s7ylmxz3/files
+2026-02-26 12:54:15,037 INFO    SenderThread:1667304 [sender.py:_start_run_threads():1136] run started: s7ylmxz3 with start time 1772070854.154375
+2026-02-26 12:54:15,060 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: check_version
+2026-02-26 12:54:15,061 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: check_version
+2026-02-26 12:54:15,223 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: run_start
+2026-02-26 12:54:15,224 DEBUG   HandlerThread:1667304 [system_info.py:__init__():27] System info init
+2026-02-26 12:54:15,224 DEBUG   HandlerThread:1667304 [system_info.py:__init__():42] System info init done
+2026-02-26 12:54:15,224 INFO    HandlerThread:1667304 [system_monitor.py:start():194] Starting system monitor
+2026-02-26 12:54:15,224 INFO    SystemMonitor:1667304 [system_monitor.py:_start():158] Starting system asset monitoring threads
+2026-02-26 12:54:15,225 INFO    HandlerThread:1667304 [system_monitor.py:probe():214] Collecting system info
+2026-02-26 12:54:15,226 INFO    SystemMonitor:1667304 [interfaces.py:start():190] Started cpu monitoring
+2026-02-26 12:54:15,226 INFO    SystemMonitor:1667304 [interfaces.py:start():190] Started disk monitoring
+2026-02-26 12:54:15,228 INFO    SystemMonitor:1667304 [interfaces.py:start():190] Started gpu monitoring
+2026-02-26 12:54:15,229 INFO    SystemMonitor:1667304 [interfaces.py:start():190] Started memory monitoring
+2026-02-26 12:54:15,230 INFO    SystemMonitor:1667304 [interfaces.py:start():190] Started network monitoring
+2026-02-26 12:54:15,297 DEBUG   HandlerThread:1667304 [system_info.py:probe():151] Probing system
+2026-02-26 12:54:15,298 DEBUG   HandlerThread:1667304 [system_info.py:_probe_git():136] Probing git
+2026-02-26 12:54:15,359 DEBUG   HandlerThread:1667304 [system_info.py:_probe_git():144] Probing git done
+2026-02-26 12:54:15,359 DEBUG   HandlerThread:1667304 [system_info.py:probe():199] Probing system done
+2026-02-26 12:54:15,359 DEBUG   HandlerThread:1667304 [system_monitor.py:probe():223] {'os': 'Linux-5.15.0-84-generic-x86_64-with-glibc2.35', 'python': '3.10.12', 'heartbeatAt': '2026-02-26T01:54:15.297544', 'startedAt': '2026-02-26T01:54:14.151242', 'docker': None, 'cuda': None, 'args': ('--multi_gpu', '--num_drafters', '3', '--target_gpu', '0', '--drafter_gpus', '1', '2', '3', '--dataset_name', 'math', '--num_questions', '300', '--target_model_name', 'Qwen/Qwen2.5-7B-Instruct', '--dllm_dir', '/home/qula0496/quan/Fast_dLLM_v2_1.5B', '--output_dir', './outputs', '--max_new_tokens', '1024', '--spec_len', '8', '--drafter_thresholds', '0.9', '--run_dllm_sf', '--baseline_sweep', '--overwrite', '--timing_out', './outputs/system_timing.jsonl', '--optimize_spec_len'), 'state': 'running', 'program': '<python with no main file>', 'codePathLocal': None, 'git': {'remote': 'https://github.com/lavanquan/specdiff_aoi.git', 'commit': '22523c3cc315fd614ac958fc6a7ba935bc72f9fc'}, 'email': None, 'root': '/share/home/qula0496/quan/speculative_decoding/specdiff_aoi', 'host': 'gpu4-119-5', 'username': 'qula0496', 'executable': '/home/qula0496/quan/.venv/bin/python', 'cpu_count': 16, 'cpu_count_logical': 32, 'cpu_freq': {'current': 1252.9185625, 'min': 800.0, 'max': 4000.0}, 'cpu_freq_per_core': [{'current': 2589.679, 'min': 800.0, 'max': 4000.0}, {'current': 800.0, 'min': 800.0, 'max': 4000.0}, {'current': 800.0, 'min': 800.0, 'max': 4000.0}, {'current': 800.0, 'min': 800.0, 'max': 4000.0}, {'current': 800.0, 'min': 800.0, 'max': 4000.0}, {'current': 800.0, 'min': 800.0, 'max': 4000.0}, {'current': 800.0, 'min': 800.0, 'max': 4000.0}, {'current': 1800.0, 'min': 800.0, 'max': 4000.0}, {'current': 800.0, 'min': 800.0, 'max': 4000.0}, {'current': 800.0, 'min': 800.0, 'max': 4000.0}, {'current': 1500.0, 'min': 800.0, 'max': 4000.0}, {'current': 2500.0, 'min': 800.0, 'max': 4000.0}, {'current': 1900.0, 'min': 800.0, 'max': 4000.0}, {'current': 2700.0, 'min': 800.0, 'max': 4000.0}, {'current': 800.0, 'min': 800.0, 'max': 4000.0}, {'current': 800.0, 'min': 800.0, 'max': 4000.0}, {'current': 800.0, 'min': 800.0, 'max': 4000.0}, {'current': 800.0, 'min': 800.0, 'max': 4000.0}, {'current': 2500.0, 'min': 800.0, 'max': 4000.0}, {'current': 800.0, 'min': 800.0, 'max': 4000.0}, {'current': 1899.832, 'min': 800.0, 'max': 4000.0}, {'current': 800.0, 'min': 800.0, 'max': 4000.0}, {'current': 800.0, 'min': 800.0, 'max': 4000.0}, {'current': 2200.005, 'min': 800.0, 'max': 4000.0}, {'current': 2500.0, 'min': 800.0, 'max': 4000.0}, {'current': 900.0, 'min': 800.0, 'max': 4000.0}, {'current': 800.0, 'min': 800.0, 'max': 4000.0}, {'current': 800.0, 'min': 800.0, 'max': 4000.0}, {'current': 3000.0, 'min': 800.0, 'max': 4000.0}, {'current': 2800.0, 'min': 800.0, 'max': 4000.0}, {'current': 800.0, 'min': 800.0, 'max': 4000.0}, {'current': 800.0, 'min': 800.0, 'max': 4000.0}], 'disk': {'/': {'total': 783.0354080200195, 'used': 528.825080871582}}, 'gpu': 'NVIDIA GeForce RTX 4090', 'gpu_count': 4, 'gpu_devices': [{'name': 'NVIDIA GeForce RTX 4090', 'memory_total': 25757220864}, {'name': 'NVIDIA GeForce RTX 4090', 'memory_total': 25757220864}, {'name': 'NVIDIA GeForce RTX 4090', 'memory_total': 25757220864}, {'name': 'NVIDIA GeForce RTX 4090', 'memory_total': 25757220864}], 'memory': {'total': 503.3149070739746}}
+2026-02-26 12:54:15,360 INFO    HandlerThread:1667304 [system_monitor.py:probe():224] Finished collecting system info
+2026-02-26 12:54:15,361 INFO    HandlerThread:1667304 [system_monitor.py:probe():227] Publishing system info
+2026-02-26 12:54:15,362 INFO    HandlerThread:1667304 [system_monitor.py:probe():229] Finished publishing system info
+2026-02-26 12:54:15,363 DEBUG   SenderThread:1667304 [sender.py:send():382] send: files
+2026-02-26 12:54:15,364 INFO    SenderThread:1667304 [sender.py:_save_file():1403] saving file wandb-metadata.json with policy now
+2026-02-26 12:54:15,378 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: python_packages
+2026-02-26 12:54:15,378 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: python_packages
+2026-02-26 12:54:15,381 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: stop_status
+2026-02-26 12:54:15,381 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: stop_status
+2026-02-26 12:54:15,427 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: internal_messages
+2026-02-26 12:54:15,796 DEBUG   SenderThread:1667304 [sender.py:send():382] send: telemetry
+2026-02-26 12:54:16,039 INFO    Thread-51 :1667304 [dir_watcher.py:_on_file_created():271] file/dir created: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125414-s7ylmxz3/files/requirements.txt
+2026-02-26 12:54:16,039 INFO    Thread-51 :1667304 [dir_watcher.py:_on_file_created():271] file/dir created: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125414-s7ylmxz3/files/wandb-metadata.json
+2026-02-26 12:54:16,238 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: stop_status
+2026-02-26 12:54:16,239 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: stop_status
+2026-02-26 12:54:16,280 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: internal_messages
+2026-02-26 12:54:16,312 INFO    wandb-upload_0:1667304 [upload_job.py:push():131] Uploaded file /tmp/tmpb0ralggmwandb/9btequ15-wandb-metadata.json
+2026-02-26 12:54:17,515 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: status_report
+2026-02-26 12:54:17,981 INFO    Thread-25 :1667304 [dir_watcher.py:_on_file_modified():288] file/dir modified: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125345-9fls4hni/files/config.yaml
+2026-02-26 12:54:19,154 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: status_report
+2026-02-26 12:54:19,709 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: status_report
+2026-02-26 12:54:19,798 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: status_report
+2026-02-26 12:54:22,848 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: status_report
+2026-02-26 12:54:24,605 DEBUG   SenderThread:1667304 [sender.py:send():382] send: telemetry
+2026-02-26 12:54:24,710 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: status_report
+2026-02-26 12:54:25,033 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: status_report
+2026-02-26 12:54:25,525 INFO    Thread-12 :1667304 [dir_watcher.py:_on_file_modified():288] file/dir modified: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125326-7d0uwkbc/files/output.log
+2026-02-26 12:54:25,606 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: status_report
+2026-02-26 12:54:26,181 DEBUG   SenderThread:1667304 [sender.py:send():382] send: telemetry
+2026-02-26 12:54:26,181 DEBUG   SenderThread:1667304 [sender.py:send():382] send: telemetry
+2026-02-26 12:54:27,496 DEBUG   SenderThread:1667304 [sender.py:send():382] send: exit
+2026-02-26 12:54:27,497 INFO    SenderThread:1667304 [sender.py:send_exit():589] handling exit code: 1
+2026-02-26 12:54:27,498 INFO    SenderThread:1667304 [sender.py:send_exit():591] handling runtime: 59
+2026-02-26 12:54:27,499 DEBUG   SenderThread:1667304 [sender.py:send():382] send: exit
+2026-02-26 12:54:27,500 INFO    SenderThread:1667304 [sender.py:_save_file():1403] saving file wandb-summary.json with policy end
+2026-02-26 12:54:27,501 INFO    SenderThread:1667304 [sender.py:send_exit():589] handling exit code: 1
+2026-02-26 12:54:27,502 INFO    SenderThread:1667304 [sender.py:send_exit():597] send defer
+2026-02-26 12:54:27,503 DEBUG   SenderThread:1667304 [sender.py:send():382] send: exit
+2026-02-26 12:54:27,504 INFO    SenderThread:1667304 [sender.py:send_exit():591] handling runtime: 41
+2026-02-26 12:54:27,504 DEBUG   SenderThread:1667304 [sender.py:send():382] send: exit
+2026-02-26 12:54:27,504 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:27,506 INFO    SenderThread:1667304 [sender.py:send_exit():589] handling exit code: 1
+2026-02-26 12:54:27,508 INFO    SenderThread:1667304 [sender.py:send_exit():589] handling exit code: 1
+2026-02-26 12:54:27,509 INFO    SenderThread:1667304 [sender.py:_save_file():1403] saving file wandb-summary.json with policy end
+2026-02-26 12:54:27,510 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 0
+2026-02-26 12:54:27,511 INFO    SenderThread:1667304 [sender.py:send_exit():591] handling runtime: 12
+2026-02-26 12:54:27,512 INFO    SenderThread:1667304 [sender.py:send_exit():591] handling runtime: 28
+2026-02-26 12:54:27,513 INFO    SenderThread:1667304 [sender.py:send_exit():597] send defer
+2026-02-26 12:54:27,514 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:27,516 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:27,518 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 0
+2026-02-26 12:54:27,520 INFO    SenderThread:1667304 [sender.py:_save_file():1403] saving file wandb-summary.json with policy end
+2026-02-26 12:54:27,523 INFO    SenderThread:1667304 [sender.py:_save_file():1403] saving file wandb-summary.json with policy end
+2026-02-26 12:54:27,523 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 0
+2026-02-26 12:54:27,524 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 1
+2026-02-26 12:54:27,525 INFO    SenderThread:1667304 [sender.py:send_exit():597] send defer
+2026-02-26 12:54:27,527 INFO    SenderThread:1667304 [sender.py:send_exit():597] send defer
+2026-02-26 12:54:27,529 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:27,529 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:27,531 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:27,531 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 0
+2026-02-26 12:54:27,531 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:27,532 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 1
+2026-02-26 12:54:27,532 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 0
+2026-02-26 12:54:27,532 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 1
+2026-02-26 12:54:27,533 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 0
+2026-02-26 12:54:27,533 INFO    Thread-12 :1667304 [dir_watcher.py:_on_file_created():271] file/dir created: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125326-7d0uwkbc/files/wandb-summary.json
+2026-02-26 12:54:27,535 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:27,536 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:27,537 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:27,538 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 1
+2026-02-26 12:54:27,538 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:27,539 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 0
+2026-02-26 12:54:27,539 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 1
+2026-02-26 12:54:27,539 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 2
+2026-02-26 12:54:27,540 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 0
+2026-02-26 12:54:27,540 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 1
+2026-02-26 12:54:27,541 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:27,541 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 1
+2026-02-26 12:54:27,542 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:27,542 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:27,544 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 1
+2026-02-26 12:54:27,544 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 2
+2026-02-26 12:54:27,545 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:27,545 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 1
+2026-02-26 12:54:27,545 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 2
+2026-02-26 12:54:27,546 INFO    HandlerThread:1667304 [system_monitor.py:finish():203] Stopping system monitor
+2026-02-26 12:54:27,546 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 1
+2026-02-26 12:54:27,547 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:27,548 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:27,549 DEBUG   SystemMonitor:1667304 [system_monitor.py:_start():172] Starting system metrics aggregation loop
+2026-02-26 12:54:27,550 INFO    HandlerThread:1667304 [interfaces.py:finish():202] Joined cpu monitor
+2026-02-26 12:54:27,552 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 2
+2026-02-26 12:54:27,552 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 1
+2026-02-26 12:54:27,552 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:27,553 DEBUG   SystemMonitor:1667304 [system_monitor.py:_start():179] Finished system metrics aggregation loop
+2026-02-26 12:54:27,553 INFO    HandlerThread:1667304 [interfaces.py:finish():202] Joined disk monitor
+2026-02-26 12:54:27,554 INFO    HandlerThread:1667304 [system_monitor.py:finish():203] Stopping system monitor
+2026-02-26 12:54:27,554 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 2
+2026-02-26 12:54:27,554 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 1
+2026-02-26 12:54:27,555 DEBUG   SystemMonitor:1667304 [system_monitor.py:_start():183] Publishing last batch of metrics
+2026-02-26 12:54:27,557 INFO    HandlerThread:1667304 [interfaces.py:finish():202] Joined cpu monitor
+2026-02-26 12:54:27,558 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:27,558 DEBUG   SystemMonitor:1667304 [system_monitor.py:_start():172] Starting system metrics aggregation loop
+2026-02-26 12:54:27,559 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 2
+2026-02-26 12:54:27,564 INFO    HandlerThread:1667304 [interfaces.py:finish():202] Joined disk monitor
+2026-02-26 12:54:27,565 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 2
+2026-02-26 12:54:27,566 DEBUG   SystemMonitor:1667304 [system_monitor.py:_start():179] Finished system metrics aggregation loop
+2026-02-26 12:54:27,567 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:27,569 INFO    HandlerThread:1667304 [system_monitor.py:finish():203] Stopping system monitor
+2026-02-26 12:54:27,570 DEBUG   SystemMonitor:1667304 [system_monitor.py:_start():183] Publishing last batch of metrics
+2026-02-26 12:54:27,570 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 2
+2026-02-26 12:54:27,574 INFO    HandlerThread:1667304 [interfaces.py:finish():202] Joined cpu monitor
+2026-02-26 12:54:27,574 DEBUG   SystemMonitor:1667304 [system_monitor.py:_start():172] Starting system metrics aggregation loop
+2026-02-26 12:54:27,578 INFO    HandlerThread:1667304 [system_monitor.py:finish():203] Stopping system monitor
+2026-02-26 12:54:27,578 INFO    HandlerThread:1667304 [interfaces.py:finish():202] Joined disk monitor
+2026-02-26 12:54:27,580 DEBUG   SystemMonitor:1667304 [system_monitor.py:_start():179] Finished system metrics aggregation loop
+2026-02-26 12:54:27,582 DEBUG   SystemMonitor:1667304 [system_monitor.py:_start():172] Starting system metrics aggregation loop
+2026-02-26 12:54:27,584 INFO    HandlerThread:1667304 [interfaces.py:finish():202] Joined cpu monitor
+2026-02-26 12:54:27,584 DEBUG   SystemMonitor:1667304 [system_monitor.py:_start():183] Publishing last batch of metrics
+2026-02-26 12:54:27,585 DEBUG   SystemMonitor:1667304 [system_monitor.py:_start():179] Finished system metrics aggregation loop
+2026-02-26 12:54:27,586 INFO    HandlerThread:1667304 [interfaces.py:finish():202] Joined disk monitor
+2026-02-26 12:54:27,587 DEBUG   SystemMonitor:1667304 [system_monitor.py:_start():183] Publishing last batch of metrics
+2026-02-26 12:54:27,987 INFO    Thread-25 :1667304 [dir_watcher.py:_on_file_created():271] file/dir created: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125345-9fls4hni/files/wandb-summary.json
+2026-02-26 12:54:28,044 INFO    Thread-51 :1667304 [dir_watcher.py:_on_file_created():271] file/dir created: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125414-s7ylmxz3/files/wandb-summary.json
+2026-02-26 12:54:28,141 INFO    Thread-38 :1667304 [dir_watcher.py:_on_file_created():271] file/dir created: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125358-0b7r8ves/files/wandb-summary.json
+2026-02-26 12:54:29,533 INFO    Thread-12 :1667304 [dir_watcher.py:_on_file_modified():288] file/dir modified: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125326-7d0uwkbc/files/output.log
+2026-02-26 12:54:31,145 INFO    Thread-38 :1667304 [dir_watcher.py:_on_file_modified():288] file/dir modified: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125358-0b7r8ves/files/config.yaml
+2026-02-26 12:54:33,189 INFO    HandlerThread:1667304 [interfaces.py:finish():202] Joined gpu monitor
+2026-02-26 12:54:33,190 INFO    HandlerThread:1667304 [interfaces.py:finish():202] Joined memory monitor
+2026-02-26 12:54:33,190 INFO    HandlerThread:1667304 [interfaces.py:finish():202] Joined network monitor
+2026-02-26 12:54:33,191 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:33,192 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: stop_status
+2026-02-26 12:54:33,192 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: internal_messages
+2026-02-26 12:54:33,193 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: status_report
+2026-02-26 12:54:33,196 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,198 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 2
+2026-02-26 12:54:33,198 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 3
+2026-02-26 12:54:33,199 DEBUG   SenderThread:1667304 [sender.py:send():382] send: stats
+2026-02-26 12:54:33,200 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:33,200 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: stop_status
+2026-02-26 12:54:33,206 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:33,209 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 3
+2026-02-26 12:54:33,335 INFO    HandlerThread:1667304 [interfaces.py:finish():202] Joined gpu monitor
+2026-02-26 12:54:33,336 INFO    HandlerThread:1667304 [interfaces.py:finish():202] Joined memory monitor
+2026-02-26 12:54:33,336 INFO    HandlerThread:1667304 [interfaces.py:finish():202] Joined network monitor
+2026-02-26 12:54:33,337 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:33,337 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: status_report
+2026-02-26 12:54:33,339 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,340 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 2
+2026-02-26 12:54:33,340 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 3
+2026-02-26 12:54:33,340 DEBUG   SenderThread:1667304 [sender.py:send():382] send: stats
+2026-02-26 12:54:33,342 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:33,342 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:33,344 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 3
+2026-02-26 12:54:33,345 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,345 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 3
+2026-02-26 12:54:33,346 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 4
+2026-02-26 12:54:33,346 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:33,347 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 4
+2026-02-26 12:54:33,347 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,348 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 4
+2026-02-26 12:54:33,348 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 5
+2026-02-26 12:54:33,348 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:33,349 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 5
+2026-02-26 12:54:33,350 DEBUG   SenderThread:1667304 [sender.py:send():382] send: summary
+2026-02-26 12:54:33,351 INFO    SenderThread:1667304 [sender.py:_save_file():1403] saving file wandb-summary.json with policy end
+2026-02-26 12:54:33,352 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,352 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 5
+2026-02-26 12:54:33,352 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 6
+2026-02-26 12:54:33,353 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:33,353 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 6
+2026-02-26 12:54:33,354 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,354 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 6
+2026-02-26 12:54:33,354 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 7
+2026-02-26 12:54:33,355 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: status_report
+2026-02-26 12:54:33,355 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:33,356 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 7
+2026-02-26 12:54:33,356 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,357 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 7
+2026-02-26 12:54:33,395 INFO    HandlerThread:1667304 [interfaces.py:finish():202] Joined gpu monitor
+2026-02-26 12:54:33,395 INFO    HandlerThread:1667304 [interfaces.py:finish():202] Joined memory monitor
+2026-02-26 12:54:33,396 INFO    HandlerThread:1667304 [interfaces.py:finish():202] Joined network monitor
+2026-02-26 12:54:33,396 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:33,397 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: stop_status
+2026-02-26 12:54:33,398 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: internal_messages
+2026-02-26 12:54:33,398 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: status_report
+2026-02-26 12:54:33,401 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,402 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 2
+2026-02-26 12:54:33,402 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 3
+2026-02-26 12:54:33,403 DEBUG   SenderThread:1667304 [sender.py:send():382] send: stats
+2026-02-26 12:54:33,403 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:33,404 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:33,409 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 3
+2026-02-26 12:54:33,409 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: stop_status
+2026-02-26 12:54:33,419 INFO    HandlerThread:1667304 [interfaces.py:finish():202] Joined gpu monitor
+2026-02-26 12:54:33,420 INFO    HandlerThread:1667304 [interfaces.py:finish():202] Joined memory monitor
+2026-02-26 12:54:33,420 INFO    HandlerThread:1667304 [interfaces.py:finish():202] Joined network monitor
+2026-02-26 12:54:33,421 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:33,421 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: status_report
+2026-02-26 12:54:33,421 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: stop_status
+2026-02-26 12:54:33,421 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: internal_messages
+2026-02-26 12:54:33,424 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,424 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 2
+2026-02-26 12:54:33,424 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 3
+2026-02-26 12:54:33,425 DEBUG   SenderThread:1667304 [sender.py:send():382] send: stats
+2026-02-26 12:54:33,425 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:33,426 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:33,430 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 3
+2026-02-26 12:54:33,430 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: stop_status
+2026-02-26 12:54:33,505 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: keepalive
+2026-02-26 12:54:33,507 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: keepalive
+2026-02-26 12:54:33,508 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: keepalive
+2026-02-26 12:54:33,508 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:33,509 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:33,511 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:33,513 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: keepalive
+2026-02-26 12:54:33,513 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:33,540 INFO    Thread-12 :1667304 [dir_watcher.py:_on_file_modified():288] file/dir modified: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125326-7d0uwkbc/files/wandb-summary.json
+2026-02-26 12:54:33,558 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,558 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 3
+2026-02-26 12:54:33,559 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 4
+2026-02-26 12:54:33,559 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:33,560 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:33,561 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 4
+2026-02-26 12:54:33,562 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,563 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 4
+2026-02-26 12:54:33,563 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 5
+2026-02-26 12:54:33,563 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:33,564 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 5
+2026-02-26 12:54:33,565 DEBUG   SenderThread:1667304 [sender.py:send():382] send: summary
+2026-02-26 12:54:33,565 INFO    SenderThread:1667304 [sender.py:_save_file():1403] saving file wandb-summary.json with policy end
+2026-02-26 12:54:33,566 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,566 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 5
+2026-02-26 12:54:33,566 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 6
+2026-02-26 12:54:33,567 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:33,567 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 6
+2026-02-26 12:54:33,568 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,568 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 6
+2026-02-26 12:54:33,568 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 7
+2026-02-26 12:54:33,569 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: status_report
+2026-02-26 12:54:33,569 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:33,569 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 7
+2026-02-26 12:54:33,570 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,570 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 7
+2026-02-26 12:54:33,570 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 8
+2026-02-26 12:54:33,571 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:33,571 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 8
+2026-02-26 12:54:33,572 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,572 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 8
+2026-02-26 12:54:33,572 INFO    SenderThread:1667304 [job_builder.py:build():296] Attempting to build job artifact
+2026-02-26 12:54:33,573 INFO    SenderThread:1667304 [job_builder.py:_get_source_type():426] is repo sourced job
+2026-02-26 12:54:33,574 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 9
+2026-02-26 12:54:33,574 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:33,574 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 9
+2026-02-26 12:54:33,575 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,575 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 9
+2026-02-26 12:54:33,576 INFO    SenderThread:1667304 [dir_watcher.py:finish():358] shutting down directory watcher
+2026-02-26 12:54:33,768 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,768 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 3
+2026-02-26 12:54:33,769 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 4
+2026-02-26 12:54:33,769 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: status_report
+2026-02-26 12:54:33,770 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:33,772 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:33,773 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 4
+2026-02-26 12:54:33,774 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,774 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 4
+2026-02-26 12:54:33,774 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 5
+2026-02-26 12:54:33,775 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:33,775 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 5
+2026-02-26 12:54:33,776 DEBUG   SenderThread:1667304 [sender.py:send():382] send: summary
+2026-02-26 12:54:33,776 INFO    SenderThread:1667304 [sender.py:_save_file():1403] saving file wandb-summary.json with policy end
+2026-02-26 12:54:33,777 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,777 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 5
+2026-02-26 12:54:33,777 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 6
+2026-02-26 12:54:33,778 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:33,778 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 6
+2026-02-26 12:54:33,779 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,779 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 6
+2026-02-26 12:54:33,779 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 7
+2026-02-26 12:54:33,780 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: status_report
+2026-02-26 12:54:33,780 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:33,780 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 7
+2026-02-26 12:54:33,781 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,781 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 7
+2026-02-26 12:54:33,781 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 8
+2026-02-26 12:54:33,782 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:33,782 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 8
+2026-02-26 12:54:33,783 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,783 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 8
+2026-02-26 12:54:33,783 INFO    SenderThread:1667304 [job_builder.py:build():296] Attempting to build job artifact
+2026-02-26 12:54:33,784 INFO    SenderThread:1667304 [job_builder.py:_get_source_type():426] is repo sourced job
+2026-02-26 12:54:33,784 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 9
+2026-02-26 12:54:33,785 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:33,785 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 9
+2026-02-26 12:54:33,785 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,786 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 9
+2026-02-26 12:54:33,786 INFO    SenderThread:1667304 [dir_watcher.py:finish():358] shutting down directory watcher
+2026-02-26 12:54:33,892 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,892 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 3
+2026-02-26 12:54:33,892 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 4
+2026-02-26 12:54:33,893 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:33,893 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:33,894 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 4
+2026-02-26 12:54:33,895 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,895 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 4
+2026-02-26 12:54:33,896 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 5
+2026-02-26 12:54:33,896 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:33,896 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 5
+2026-02-26 12:54:33,897 DEBUG   SenderThread:1667304 [sender.py:send():382] send: summary
+2026-02-26 12:54:33,898 INFO    SenderThread:1667304 [sender.py:_save_file():1403] saving file wandb-summary.json with policy end
+2026-02-26 12:54:33,899 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,899 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 5
+2026-02-26 12:54:33,900 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 6
+2026-02-26 12:54:33,900 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:33,900 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 6
+2026-02-26 12:54:33,901 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:33,901 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 6
+2026-02-26 12:54:33,907 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: status_report
+2026-02-26 12:54:33,990 INFO    SenderThread:1667304 [dir_watcher.py:_on_file_modified():288] file/dir modified: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125345-9fls4hni/files/wandb-summary.json
+2026-02-26 12:54:33,991 INFO    SenderThread:1667304 [dir_watcher.py:finish():388] scan: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125345-9fls4hni/files
+2026-02-26 12:54:33,992 INFO    SenderThread:1667304 [dir_watcher.py:finish():402] scan save: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125345-9fls4hni/files/config.yaml config.yaml
+2026-02-26 12:54:33,992 INFO    SenderThread:1667304 [dir_watcher.py:finish():402] scan save: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125345-9fls4hni/files/wandb-metadata.json wandb-metadata.json
+2026-02-26 12:54:33,992 INFO    SenderThread:1667304 [dir_watcher.py:finish():402] scan save: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125345-9fls4hni/files/requirements.txt requirements.txt
+2026-02-26 12:54:33,993 INFO    SenderThread:1667304 [dir_watcher.py:finish():402] scan save: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125345-9fls4hni/files/wandb-summary.json wandb-summary.json
+2026-02-26 12:54:33,993 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 10
+2026-02-26 12:54:33,994 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:34,003 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 10
+2026-02-26 12:54:34,004 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:34,004 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 10
+2026-02-26 12:54:34,004 INFO    SenderThread:1667304 [file_pusher.py:finish():172] shutting down file pusher
+2026-02-26 12:54:34,053 INFO    Thread-51 :1667304 [dir_watcher.py:_on_file_modified():288] file/dir modified: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125414-s7ylmxz3/files/wandb-summary.json
+2026-02-26 12:54:34,148 INFO    SenderThread:1667304 [dir_watcher.py:_on_file_modified():288] file/dir modified: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125358-0b7r8ves/files/wandb-summary.json
+2026-02-26 12:54:34,149 INFO    SenderThread:1667304 [dir_watcher.py:finish():388] scan: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125358-0b7r8ves/files
+2026-02-26 12:54:34,149 INFO    SenderThread:1667304 [dir_watcher.py:finish():402] scan save: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125358-0b7r8ves/files/config.yaml config.yaml
+2026-02-26 12:54:34,150 INFO    SenderThread:1667304 [dir_watcher.py:finish():402] scan save: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125358-0b7r8ves/files/wandb-metadata.json wandb-metadata.json
+2026-02-26 12:54:34,150 INFO    SenderThread:1667304 [dir_watcher.py:finish():402] scan save: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125358-0b7r8ves/files/requirements.txt requirements.txt
+2026-02-26 12:54:34,153 INFO    SenderThread:1667304 [dir_watcher.py:finish():402] scan save: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125358-0b7r8ves/files/wandb-summary.json wandb-summary.json
+2026-02-26 12:54:34,154 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 10
+2026-02-26 12:54:34,157 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:34,158 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 10
+2026-02-26 12:54:34,161 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:34,161 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 10
+2026-02-26 12:54:34,161 INFO    SenderThread:1667304 [file_pusher.py:finish():172] shutting down file pusher
+2026-02-26 12:54:34,295 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 7
+2026-02-26 12:54:34,296 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:34,296 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 7
+2026-02-26 12:54:34,297 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:34,297 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 7
+2026-02-26 12:54:34,297 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 8
+2026-02-26 12:54:34,298 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:34,298 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 8
+2026-02-26 12:54:34,299 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:34,299 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 8
+2026-02-26 12:54:34,299 INFO    SenderThread:1667304 [job_builder.py:build():296] Attempting to build job artifact
+2026-02-26 12:54:34,300 INFO    SenderThread:1667304 [job_builder.py:_get_source_type():426] is repo sourced job
+2026-02-26 12:54:34,300 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 9
+2026-02-26 12:54:34,301 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:34,301 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 9
+2026-02-26 12:54:34,302 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:34,302 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 9
+2026-02-26 12:54:34,302 INFO    SenderThread:1667304 [dir_watcher.py:finish():358] shutting down directory watcher
+2026-02-26 12:54:34,513 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:34,514 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:34,516 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:34,516 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:34,518 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:34,552 INFO    wandb-upload_1:1667304 [upload_job.py:push():131] Uploaded file /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125345-9fls4hni/files/requirements.txt
+2026-02-26 12:54:34,694 INFO    wandb-upload_0:1667304 [upload_job.py:push():131] Uploaded file /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125358-0b7r8ves/files/config.yaml
+2026-02-26 12:54:34,927 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 8
+2026-02-26 12:54:34,927 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:34,928 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:34,928 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 8
+2026-02-26 12:54:34,929 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:34,929 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 8
+2026-02-26 12:54:34,930 INFO    SenderThread:1667304 [job_builder.py:build():296] Attempting to build job artifact
+2026-02-26 12:54:34,930 INFO    SenderThread:1667304 [job_builder.py:_get_source_type():426] is repo sourced job
+2026-02-26 12:54:34,939 INFO    wandb-upload_2:1667304 [upload_job.py:push():131] Uploaded file /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125345-9fls4hni/files/wandb-summary.json
+2026-02-26 12:54:34,960 INFO    SenderThread:1667304 [job_builder.py:build():402] adding wandb-job metadata file
+2026-02-26 12:54:34,964 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 9
+2026-02-26 12:54:34,966 DEBUG   SenderThread:1667304 [sender.py:send():382] send: artifact
+2026-02-26 12:54:34,969 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:34,970 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 9
+2026-02-26 12:54:34,977 INFO    wandb-upload_0:1667304 [upload_job.py:push():131] Uploaded file /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125345-9fls4hni/files/config.yaml
+2026-02-26 12:54:35,053 INFO    Thread-51 :1667304 [dir_watcher.py:_on_file_modified():288] file/dir modified: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125414-s7ylmxz3/files/config.yaml
+2026-02-26 12:54:35,054 INFO    SenderThread:1667304 [dir_watcher.py:finish():388] scan: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125414-s7ylmxz3/files
+2026-02-26 12:54:35,055 INFO    SenderThread:1667304 [dir_watcher.py:finish():402] scan save: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125414-s7ylmxz3/files/config.yaml config.yaml
+2026-02-26 12:54:35,055 INFO    SenderThread:1667304 [dir_watcher.py:finish():402] scan save: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125414-s7ylmxz3/files/wandb-metadata.json wandb-metadata.json
+2026-02-26 12:54:35,056 INFO    SenderThread:1667304 [dir_watcher.py:finish():402] scan save: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125414-s7ylmxz3/files/requirements.txt requirements.txt
+2026-02-26 12:54:35,059 INFO    SenderThread:1667304 [dir_watcher.py:finish():402] scan save: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125414-s7ylmxz3/files/wandb-summary.json wandb-summary.json
+2026-02-26 12:54:35,060 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 10
+2026-02-26 12:54:35,061 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:35,061 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:35,069 INFO    wandb-upload_2:1667304 [upload_job.py:push():131] Uploaded file /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125358-0b7r8ves/files/wandb-summary.json
+2026-02-26 12:54:35,070 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 10
+2026-02-26 12:54:35,071 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:35,071 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 10
+2026-02-26 12:54:35,071 INFO    SenderThread:1667304 [file_pusher.py:finish():172] shutting down file pusher
+2026-02-26 12:54:35,109 INFO    wandb-upload_1:1667304 [upload_job.py:push():131] Uploaded file /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125358-0b7r8ves/files/requirements.txt
+2026-02-26 12:54:35,178 INFO    Thread-24 (_thread_body):1667304 [sender.py:transition_state():617] send defer: 11
+2026-02-26 12:54:35,179 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:35,179 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 11
+2026-02-26 12:54:35,180 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:35,180 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 11
+2026-02-26 12:54:35,181 INFO    SenderThread:1667304 [file_pusher.py:join():178] waiting for file pusher
+2026-02-26 12:54:35,181 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 12
+2026-02-26 12:54:35,182 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:35,182 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 12
+2026-02-26 12:54:35,182 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:35,183 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 12
+2026-02-26 12:54:35,183 INFO    SenderThread:1667304 [file_stream.py:finish():595] file stream finish called
+2026-02-26 12:54:35,310 INFO    Thread-37 (_thread_body):1667304 [sender.py:transition_state():617] send defer: 11
+2026-02-26 12:54:35,311 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:35,311 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 11
+2026-02-26 12:54:35,312 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:35,312 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 11
+2026-02-26 12:54:35,313 INFO    SenderThread:1667304 [file_pusher.py:join():178] waiting for file pusher
+2026-02-26 12:54:35,313 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 12
+2026-02-26 12:54:35,313 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:35,314 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 12
+2026-02-26 12:54:35,314 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:35,315 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 12
+2026-02-26 12:54:35,315 INFO    SenderThread:1667304 [file_stream.py:finish():595] file stream finish called
+2026-02-26 12:54:35,516 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:35,518 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:35,519 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:35,520 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:35,522 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:35,541 INFO    Thread-12 :1667304 [dir_watcher.py:_on_file_modified():288] file/dir modified: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125326-7d0uwkbc/files/output.log
+2026-02-26 12:54:35,599 INFO    wandb-upload_1:1667304 [upload_job.py:push():131] Uploaded file /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125414-s7ylmxz3/files/requirements.txt
+2026-02-26 12:54:35,803 INFO    wandb-upload_0:1667304 [upload_job.py:push():131] Uploaded file /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125414-s7ylmxz3/files/config.yaml
+2026-02-26 12:54:35,866 INFO    wandb-upload_2:1667304 [upload_job.py:push():131] Uploaded file /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125414-s7ylmxz3/files/wandb-summary.json
+2026-02-26 12:54:36,067 INFO    Thread-50 (_thread_body):1667304 [sender.py:transition_state():617] send defer: 11
+2026-02-26 12:54:36,068 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:36,069 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 11
+2026-02-26 12:54:36,070 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:36,070 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 11
+2026-02-26 12:54:36,070 INFO    SenderThread:1667304 [file_pusher.py:join():178] waiting for file pusher
+2026-02-26 12:54:36,071 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 12
+2026-02-26 12:54:36,071 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:36,072 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 12
+2026-02-26 12:54:36,072 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:36,073 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 12
+2026-02-26 12:54:36,073 INFO    SenderThread:1667304 [file_stream.py:finish():595] file stream finish called
+2026-02-26 12:54:36,080 INFO    SenderThread:1667304 [file_stream.py:finish():599] file stream finish is done
+2026-02-26 12:54:36,081 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 13
+2026-02-26 12:54:36,081 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:36,082 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:36,082 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 13
+2026-02-26 12:54:36,083 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:36,083 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 13
+2026-02-26 12:54:36,083 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 14
+2026-02-26 12:54:36,084 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:36,084 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 14
+2026-02-26 12:54:36,085 DEBUG   SenderThread:1667304 [sender.py:send():382] send: final
+2026-02-26 12:54:36,086 DEBUG   SenderThread:1667304 [sender.py:send():382] send: footer
+2026-02-26 12:54:36,086 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:36,086 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 14
+2026-02-26 12:54:36,087 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:36,089 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:36,090 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:36,172 INFO    SenderThread:1667304 [file_stream.py:finish():599] file stream finish is done
+2026-02-26 12:54:36,172 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 13
+2026-02-26 12:54:36,173 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:36,173 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:36,175 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 13
+2026-02-26 12:54:36,176 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:36,176 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 13
+2026-02-26 12:54:36,176 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 14
+2026-02-26 12:54:36,177 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:36,177 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 14
+2026-02-26 12:54:36,178 DEBUG   SenderThread:1667304 [sender.py:send():382] send: final
+2026-02-26 12:54:36,178 DEBUG   SenderThread:1667304 [sender.py:send():382] send: footer
+2026-02-26 12:54:36,179 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:36,179 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 14
+2026-02-26 12:54:36,180 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:36,181 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:36,182 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:36,184 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:36,295 INFO    SenderThread:1667304 [sender.py:send_artifact():1494] sent artifact job-https___github.com_lavanquan_specdiff_aoi.git_failfast.py - {'id': 'QXJ0aWZhY3Q6MjQwMTU0NjUzMw==', 'state': 'COMMITTED', 'artifactSequence': {'id': 'QXJ0aWZhY3RDb2xsZWN0aW9uOjgzNDM1NzQxMQ==', 'latestArtifact': {'id': 'QXJ0aWZhY3Q6MjQwMzgzNzk3NA==', 'versionIndex': 5}}}
+2026-02-26 12:54:36,295 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:36,295 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 9
+2026-02-26 12:54:36,296 INFO    SenderThread:1667304 [dir_watcher.py:finish():358] shutting down directory watcher
+2026-02-26 12:54:36,501 INFO    SenderThread:1667304 [file_stream.py:finish():599] file stream finish is done
+2026-02-26 12:54:36,501 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 13
+2026-02-26 12:54:36,501 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:36,502 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:36,503 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 13
+2026-02-26 12:54:36,504 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:36,504 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 13
+2026-02-26 12:54:36,504 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 14
+2026-02-26 12:54:36,505 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:36,505 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 14
+2026-02-26 12:54:36,506 DEBUG   SenderThread:1667304 [sender.py:send():382] send: final
+2026-02-26 12:54:36,507 DEBUG   SenderThread:1667304 [sender.py:send():382] send: footer
+2026-02-26 12:54:36,507 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:36,507 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 14
+2026-02-26 12:54:36,508 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:36,509 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:36,510 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:36,512 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:36,513 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:36,514 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:36,542 INFO    SenderThread:1667304 [dir_watcher.py:finish():388] scan: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125326-7d0uwkbc/files
+2026-02-26 12:54:36,543 INFO    SenderThread:1667304 [dir_watcher.py:finish():402] scan save: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125326-7d0uwkbc/files/config.yaml config.yaml
+2026-02-26 12:54:36,543 INFO    SenderThread:1667304 [dir_watcher.py:finish():402] scan save: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125326-7d0uwkbc/files/output.log output.log
+2026-02-26 12:54:36,544 INFO    SenderThread:1667304 [dir_watcher.py:finish():402] scan save: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125326-7d0uwkbc/files/wandb-metadata.json wandb-metadata.json
+2026-02-26 12:54:36,547 INFO    SenderThread:1667304 [dir_watcher.py:finish():402] scan save: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125326-7d0uwkbc/files/requirements.txt requirements.txt
+2026-02-26 12:54:36,549 INFO    SenderThread:1667304 [dir_watcher.py:finish():402] scan save: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125326-7d0uwkbc/files/wandb-summary.json wandb-summary.json
+2026-02-26 12:54:36,550 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 10
+2026-02-26 12:54:36,550 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:36,553 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:36,554 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 10
+2026-02-26 12:54:36,560 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:36,561 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 10
+2026-02-26 12:54:36,561 INFO    SenderThread:1667304 [file_pusher.py:finish():172] shutting down file pusher
+2026-02-26 12:54:37,122 INFO    wandb-upload_1:1667304 [upload_job.py:push():131] Uploaded file /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125326-7d0uwkbc/files/output.log
+2026-02-26 12:54:37,358 INFO    wandb-upload_0:1667304 [upload_job.py:push():131] Uploaded file /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125326-7d0uwkbc/files/config.yaml
+2026-02-26 12:54:37,513 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:37,514 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:37,516 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:37,517 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:37,518 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:37,521 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:37,522 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:37,523 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:37,541 INFO    wandb-upload_3:1667304 [upload_job.py:push():131] Uploaded file /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125326-7d0uwkbc/files/wandb-summary.json
+2026-02-26 12:54:37,563 INFO    wandb-upload_2:1667304 [upload_job.py:push():131] Uploaded file /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125326-7d0uwkbc/files/requirements.txt
+2026-02-26 12:54:37,763 INFO    Thread-11 (_thread_body):1667304 [sender.py:transition_state():617] send defer: 11
+2026-02-26 12:54:37,764 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:37,764 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 11
+2026-02-26 12:54:37,765 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:37,766 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 11
+2026-02-26 12:54:37,766 INFO    SenderThread:1667304 [file_pusher.py:join():178] waiting for file pusher
+2026-02-26 12:54:37,766 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 12
+2026-02-26 12:54:37,767 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:37,767 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 12
+2026-02-26 12:54:37,768 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:37,768 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 12
+2026-02-26 12:54:37,768 INFO    SenderThread:1667304 [file_stream.py:finish():595] file stream finish called
+2026-02-26 12:54:38,225 INFO    SenderThread:1667304 [file_stream.py:finish():599] file stream finish is done
+2026-02-26 12:54:38,225 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 13
+2026-02-26 12:54:38,226 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:38,226 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 13
+2026-02-26 12:54:38,227 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:38,227 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 13
+2026-02-26 12:54:38,228 INFO    SenderThread:1667304 [sender.py:transition_state():617] send defer: 14
+2026-02-26 12:54:38,228 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: defer
+2026-02-26 12:54:38,229 INFO    HandlerThread:1667304 [handler.py:handle_request_defer():172] handle defer: 14
+2026-02-26 12:54:38,230 DEBUG   SenderThread:1667304 [sender.py:send():382] send: final
+2026-02-26 12:54:38,230 DEBUG   SenderThread:1667304 [sender.py:send():382] send: footer
+2026-02-26 12:54:38,231 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: defer
+2026-02-26 12:54:38,231 INFO    SenderThread:1667304 [sender.py:send_request_defer():613] handle sender defer: 14
+2026-02-26 12:54:38,232 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:38,233 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:38,234 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:38,236 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:38,236 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:38,238 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:38,241 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:38,242 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: poll_exit
+2026-02-26 12:54:38,242 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:38,245 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: server_info
+2026-02-26 12:54:38,246 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: poll_exit
+2026-02-26 12:54:38,247 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: get_summary
+2026-02-26 12:54:38,249 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: sampled_history
+2026-02-26 12:54:38,249 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: internal_messages
+2026-02-26 12:54:38,250 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: server_info
+2026-02-26 12:54:38,256 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: job_info
+2026-02-26 12:54:38,463 DEBUG   SenderThread:1667304 [sender.py:send_request():409] send_request: job_info
+2026-02-26 12:54:38,464 INFO    MainThread:1667304 [wandb_run.py:_footer_history_summary_info():3866] rendering history
+2026-02-26 12:54:38,465 INFO    MainThread:1667304 [wandb_run.py:_footer_history_summary_info():3898] rendering summary
+2026-02-26 12:54:38,465 INFO    MainThread:1667304 [wandb_run.py:_footer_sync_info():3825] logging synced files
+2026-02-26 12:54:38,466 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: shutdown
+2026-02-26 12:54:38,466 INFO    HandlerThread:1667304 [handler.py:finish():869] shutting down handler
+2026-02-26 12:54:39,245 DEBUG   HandlerThread:1667304 [handler.py:handle_request():146] handle_request: status_report
+2026-02-26 12:54:39,257 INFO    WriterThread:1667304 [datastore.py:close():296] close: /share/home/qula0496/quan/speculative_decoding/specdiff_aoi/wandb/run-20260226_125326-7d0uwkbc/run-7d0uwkbc.wandb
+2026-02-26 12:54:39,464 INFO    SenderThread:1667304 [sender.py:finish():1572] shutting down sender
+2026-02-26 12:54:39,465 INFO    SenderThread:1667304 [file_pusher.py:finish():172] shutting down file pusher
+2026-02-26 12:54:39,465 INFO    SenderThread:1667304 [file_pusher.py:join():178] waiting for file pusher

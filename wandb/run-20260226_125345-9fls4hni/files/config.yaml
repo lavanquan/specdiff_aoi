@@ -1,0 +1,68 @@
+wandb_version: 1
+
+dataset:
+  desc: null
+  value: math
+num_questions:
+  desc: null
+  value: 300
+spec_len:
+  desc: null
+  value: 8
+target_model:
+  desc: null
+  value: Qwen/Qwen2.5-7B-Instruct
+dllm_dir:
+  desc: null
+  value: /home/qula0496/quan/Fast_dLLM_v2_1.5B
+verifier_budget:
+  desc: null
+  value: 24
+optimize_spec_len:
+  desc: null
+  value: true
+num_workers:
+  desc: null
+  value: 3
+_wandb:
+  desc: null
+  value:
+    python_version: 3.10.12
+    cli_version: 0.16.3
+    framework: huggingface
+    huggingface_version: 4.57.3
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    start_time: 1772070825.163908
+    t:
+      1:
+      - 1
+      - 5
+      - 11
+      - 49
+      - 51
+      - 53
+      - 55
+      - 71
+      2:
+      - 1
+      - 2
+      - 3
+      - 5
+      - 11
+      - 41
+      - 49
+      - 51
+      - 53
+      - 55
+      - 71
+      3:
+      - 13
+      - 16
+      - 23
+      4: 3.10.12
+      5: 0.16.3
+      6: 4.57.3
+      8:
+      - 5
+      13: linux-x86_64
