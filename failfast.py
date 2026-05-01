@@ -1102,20 +1102,6 @@ parser.add_argument("--optimize_spec_len", action="store_true",
 
 args, _ = parser.parse_known_args()
 args.target_model_name_clean = args.target_model_name.split("/", 1)[1]
-run = wandb.init(
-    project="specdiff_aoi",
-    name=f"math_multi_gpu_opt{int(args.optimize_spec_len)}",
-    config={
-        "dataset": args.dataset_name,
-        "num_questions": args.num_questions,
-        "spec_len": args.spec_len,
-        "target_model": args.target_model_name,
-        "dllm_dir": args.dllm_dir,
-        "verifier_budget": getattr(args, "verifier_budget", None),
-        "optimize_spec_len": getattr(args, "optimize_spec_len", False),
-        "num_workers": args.num_drafters,
-    }
-)
 
 ######custom fields for easier debugging######
 # args.log_level = "DEBUG"
@@ -1144,6 +1130,33 @@ logging.basicConfig(
 
 construct_drafter_configs(args)  # populates args.drafter_configs
 populate_dataset(args)  # populates args.dataset
+
+dataset_len = len(args.dataset)
+if args.num_questions > dataset_len:
+    logging.warning(
+        "Requested num_questions=%d exceeds dataset size=%d for %s; capping to dataset size.",
+        args.num_questions,
+        dataset_len,
+        args.dataset_name,
+    )
+    args.num_questions = dataset_len
+if args.num_questions <= 0:
+    raise ValueError(f"num_questions must be positive after dataset load; got {args.num_questions}")
+
+run = wandb.init(
+    project="specdiff_aoi",
+    name=f"math_multi_gpu_opt{int(args.optimize_spec_len)}",
+    config={
+        "dataset": args.dataset_name,
+        "num_questions": args.num_questions,
+        "spec_len": args.spec_len,
+        "target_model": args.target_model_name,
+        "dllm_dir": args.dllm_dir,
+        "verifier_budget": getattr(args, "verifier_budget", None),
+        "optimize_spec_len": getattr(args, "optimize_spec_len", False),
+        "num_workers": args.num_drafters,
+    }
+)
 
 args.latency = {  # all in ms
     "vLLM_A6000": {
